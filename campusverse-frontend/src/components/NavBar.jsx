@@ -9,6 +9,9 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import SchoolIcon from "@mui/icons-material/School";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
@@ -16,7 +19,16 @@ export default function NavBar() {
   const location = useLocation();
 
   // track current tab by path
-  const [tab, setTab] = useState(false);
+  const [tab, setTab] = useState("home");
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (location.pathname.startsWith("/dashboard")) setTab("dashboard");
@@ -31,48 +43,154 @@ export default function NavBar() {
   };
 
   return (
-    <AppBar position="static" color="default" elevation={1}>
-      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-        {/* Left side navigation */}
-        <Tabs
-          value={tab}
-          onChange={handleChange}
-          textColor="primary"
-          indicatorColor="primary"
+    <AppBar
+      position="sticky"
+      sx={{
+        background: isScrolled
+          ? "rgba(11, 15, 25, 0.85)"
+          : "rgba(11, 15, 25, 0.95)",
+        backdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        transition: "all 0.3s ease",
+        top: 0,
+        zIndex: 1100,
+        boxShadow: isScrolled ? "0 10px 30px -10px rgba(0,0,0,0.5)" : "none",
+      }}
+    >
+      <Container maxWidth="lg">
+        <Toolbar
+          disableGutters
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            height: 70,
+          }}
         >
-          <Tab label="Home" value="home" />
-          {!user && <Tab label="Login" value="login" />}
-          {/* {!user && <Tab label="Register" value="register" />} */}
-          {user && <Tab label="Dashboard" value="dashboard" />}
-        </Tabs>
-
-        {/* Right side brand + logout */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Typography
-            variant="h6"
+          {/* Left side brand logo */}
+          <Box
+            onClick={() => nav("/")}
             sx={{
-              fontWeight: 700,
-              color: "primary.main",
-              letterSpacing: "1px"
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              cursor: "pointer",
             }}
           >
-            CampusVerse
-          </Typography>
-
-          {user && (
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                logout();
-                nav("/login");
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
               }}
             >
-              Logout
-            </Button>
-          )}
-        </div>
-      </Toolbar>
+              <SchoolIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                fontSize: "1.2rem",
+              }}
+            >
+              CampusVerse
+            </Typography>
+          </Box>
+
+          {/* Center Tabs Navigation */}
+          <Tabs
+            value={tab}
+            onChange={handleChange}
+            textColor="inherit"
+            indicatorColor="primary"
+            sx={{
+              height: "100%",
+              "& .MuiTabs-indicator": {
+                height: 3,
+                borderRadius: "3px 3px 0 0",
+                background: "linear-gradient(90deg, #4F46E5 0%, #EC4899 100%)",
+              },
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                color: "rgba(255, 255, 255, 0.6)",
+                minWidth: 90,
+                transition: "color 0.2s",
+                "&.Mui-selected": {
+                  color: "#FFFFFF",
+                },
+                "&:hover": {
+                  color: "#FFFFFF",
+                },
+              },
+            }}
+          >
+            <Tab label="Home" value="home" />
+            {!user && <Tab label="Login" value="login" />}
+            {user && <Tab label="Dashboard" value="dashboard" />}
+          </Tabs>
+
+          {/* Right side Actions */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {user ? (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={() => {
+                  logout();
+                  nav("/login");
+                }}
+                sx={{
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  px: 2.5,
+                  py: 0.8,
+                  borderColor: "rgba(239, 68, 68, 0.4)",
+                  color: "#EF4444",
+                  "&:hover": {
+                    borderColor: "#EF4444",
+                    bgcolor: "rgba(239, 68, 68, 0.05)",
+                  },
+                }}
+              >
+                Logout
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => nav("/login")}
+                sx={{
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  px: 2.5,
+                  py: 0.8,
+                  background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
+                  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.2)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #4338CA 0%, #4F46E5 100%)",
+                  },
+                }}
+              >
+                Sign In
+              </Button>
+            )}
+          </Box>
+        </Toolbar>
+      </Container>
     </AppBar>
   );
 }

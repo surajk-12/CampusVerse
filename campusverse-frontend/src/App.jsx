@@ -14,6 +14,10 @@ import MySidebar from "./components/MySidebar.jsx";
 import CollegeDetails from "./pages/CollegeDetails.jsx";
 import StudentsPage from "./pages/StudentPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
+import Chat from "./pages/Chat.jsx";
+import MyProfile from "./pages/MyProfile.jsx";
+import Connections from "./pages/Connections.jsx";
+import QuickActions from "./pages/QuickActions.jsx";
 
 export default function App() {
   return (
@@ -77,7 +81,46 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <Chat />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <MyProfile />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/connections"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <Connections />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quick-actions"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <QuickActions />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Fallback */}
             <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />

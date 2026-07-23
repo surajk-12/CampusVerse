@@ -11,7 +11,9 @@ import {
   Paper,
   FormControl,
   Stack,
+  InputLabel,
 } from "@mui/material";
+import { CloudUpload, PersonAdd } from "@mui/icons-material";
 
 export default function Register() {
   const { register, loading } = useAuth();
@@ -37,8 +39,6 @@ export default function Register() {
     collegeName: collegeInfo.collegeName || "",
     collegeLocation: collegeInfo.collegeLocation || "",
   });
-  console.log("form Data", form);
-
 
   const [photo, setPhoto] = useState(null);
   const [collegeIdCard, setCollegeIdCard] = useState(null);
@@ -51,7 +51,7 @@ export default function Register() {
     setOk("");
 
     if (!photo || !collegeIdCard) {
-      setErr("Please upload both Photo and College ID Card.");
+      setErr("Please upload both your live photo and your college ID card.");
       return;
     }
 
@@ -61,116 +61,235 @@ export default function Register() {
     fd.append("collegeIdCard", collegeIdCard);
 
     const res = await register(fd);
-    console.log("Register response of res", res);
+    console.log("Register response:", res);
 
     if (res.ok) {
-      setOk("Registration successful! Redirecting…");
+      setOk("Registration successful! Entering Dashboard…");
       setTimeout(() => nav("/dashboard"), 600);
     } else {
       setErr(res.message);
     }
   };
 
+  const textFieldStyles = {
+    "& .MuiOutlinedInput-root": {
+      background: "rgba(255, 255, 255, 0.04)",
+      borderRadius: "14px",
+      color: "#FFFFFF",
+      "& fieldset": {
+        borderColor: "rgba(255, 255, 255, 0.1)",
+      },
+      "&:hover fieldset": {
+        borderColor: "rgba(129, 140, 248, 0.4)",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#818CF8",
+        borderWidth: "1.5px",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "rgba(255, 255, 255, 0.5)",
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "#818CF8",
+    },
+    "& .MuiOutlinedInput-input.Mui-disabled": {
+      WebkitTextFillColor: "rgba(255, 255, 255, 0.4)",
+    },
+  };
+
+  const selectStyles = {
+    ...textFieldStyles,
+    "& .MuiSelect-icon": {
+      color: "rgba(255, 255, 255, 0.5)",
+    },
+  };
+
   return (
     <Box
       sx={{
+        bgcolor: "#0B0F19", // Cohesive dark space theme background
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         p: 2,
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Decorative background ambient blobs */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "10%",
+          left: "15%",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(79,70,229,0.1) 0%, rgba(0,0,0,0) 70%)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "10%",
+          right: "15%",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(236,72,153,0.1) 0%, rgba(0,0,0,0) 70%)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
       <Paper
         elevation={4}
         sx={{
-          p: 4,
-          maxWidth: 550,
+          p: { xs: 4, md: 5 },
+          maxWidth: 600,
           width: "100%",
-          borderRadius: 2,
-          bgcolor: "#fff",
+          borderRadius: "28px",
+          background: "rgba(30, 41, 59, 0.3)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <Typography
-          variant="h5"
-          fontWeight="bold"
-          mb={3}
-          color="primary.main"
+          variant="h4"
+          fontWeight="900"
+          mb={1}
           textAlign="center"
+          sx={{
+            background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}
         >
-          Create Your Account
+          Create Student Account
+        </Typography>
+        <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", textAlign: "center", mb: 4 }}>
+          Join your college's community on CampusVerse
         </Typography>
 
         {err && (
-          <Typography color="error" mb={2} textAlign="center">
-            {err}
-          </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              mb: 3,
+              bgcolor: "rgba(239, 68, 68, 0.1)",
+              borderColor: "rgba(239, 68, 68, 0.3)",
+              borderRadius: "12px",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#F87171", textAlign: "center", fontWeight: "500" }}>
+              {err}
+            </Typography>
+          </Paper>
         )}
         {ok && (
-          <Typography color="primary.main" mb={2} textAlign="center">
-            {ok}
-          </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              mb: 3,
+              bgcolor: "rgba(16, 185, 129, 0.1)",
+              borderColor: "rgba(16, 185, 129, 0.3)",
+              borderRadius: "12px",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#34D399", textAlign: "center", fontWeight: "500" }}>
+              {ok}
+            </Typography>
+          </Paper>
         )}
 
         <form onSubmit={onSubmit}>
-          <Stack spacing={2}>
+          <Stack spacing={2.5}>
             {/* Name */}
-            <Box display="flex" gap={1}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                placeholder="First Name"
+                label="First Name"
                 name="firstName"
                 value={form.firstName}
                 onChange={onChange}
                 required
-                size="small"
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
               <TextField
-                placeholder="Last Name"
+                label="Last Name"
                 name="lastName"
                 value={form.lastName}
                 onChange={onChange}
                 required
-                size="small"
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
-            </Box>
+            </Stack>
 
             {/* Email & Password */}
             <TextField
-              placeholder="Email"
+              label="Email Address"
               name="email"
               type="email"
               value={form.email}
               onChange={onChange}
               required
-              size="small"
               fullWidth
               variant="outlined"
+              sx={textFieldStyles}
             />
             <TextField
-              placeholder="Password"
+              label="Password"
               name="password"
               type="password"
               value={form.password}
               onChange={onChange}
               required
-              size="small"
               fullWidth
               variant="outlined"
+              sx={textFieldStyles}
             />
 
             {/* Gender, Course, Branch & Passing Year */}
-            <Box display="flex" gap={1}>
-              <FormControl fullWidth size="small">
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <FormControl fullWidth sx={selectStyles}>
+                <InputLabel id="gender-select-label" sx={{ color: "rgba(255, 255, 255, 0.5) !important" }}>
+                  Gender
+                </InputLabel>
                 <Select
-                  displayEmpty
+                  labelId="gender-select-label"
+                  label="Gender"
                   name="gender"
                   value={form.gender}
                   onChange={onChange}
                   variant="outlined"
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: "#0F172A",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "#FFFFFF",
+                        "& .MuiMenuItem-root:hover": {
+                          bgcolor: "rgba(129, 140, 248, 0.15)",
+                        },
+                        "& .Mui-selected": {
+                          bgcolor: "rgba(129, 140, 248, 0.25) !important",
+                        },
+                      },
+                    },
+                  }}
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>
@@ -179,72 +298,86 @@ export default function Register() {
               </FormControl>
 
               <TextField
-                placeholder="Course"
+                label="Course (e.g. B.Tech)"
                 name="course"
                 value={form.course}
                 onChange={onChange}
-                size="small"
+                required
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
-            </Box>
+            </Stack>
 
-            <Box display="flex" gap={1}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                placeholder="Branch"
+                label="Branch (e.g. CSE)"
                 name="branch"
                 value={form.branch}
                 onChange={onChange}
-                size="small"
+                required
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
 
               <TextField
-                placeholder="Passing Year"
+                label="Passing Year"
                 name="passingYear"
+                type="number"
                 value={form.passingYear}
                 onChange={onChange}
-                size="small"
+                required
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
-            </Box>
-
+            </Stack>
 
             {/* College Info (Disabled, pre-filled) */}
-            <Box display="flex" gap={1}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                placeholder="College Name"
+                label="College Name"
                 name="collegeName"
                 value={form.collegeName}
                 disabled
-                size="small"
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
               <TextField
-                placeholder="College Location"
+                label="College Location"
                 name="collegeLocation"
                 value={form.collegeLocation}
                 disabled
-                size="small"
                 fullWidth
                 variant="outlined"
+                sx={textFieldStyles}
               />
-            </Box>
+            </Stack>
 
             {/* File Uploads */}
-            <Box display="flex" gap={1} mt={1}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 1 }}>
               <Box flex={1}>
                 <Button
                   variant="outlined"
                   component="label"
                   fullWidth
-                  sx={{ textTransform: "none" }}
-                  size="small"
+                  startIcon={<CloudUpload />}
+                  sx={{
+                    py: 1.5,
+                    borderStyle: "dashed",
+                    borderWidth: "1.5px",
+                    borderRadius: "14px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    "&:hover": {
+                      borderColor: "rgba(129, 140, 248, 0.5)",
+                      background: "rgba(129, 140, 248, 0.05)",
+                    },
+                  }}
                 >
-                  Upload Photo
+                  Upload Live Photo
                   <input
                     type="file"
                     accept="image/*"
@@ -253,11 +386,17 @@ export default function Register() {
                   />
                 </Button>
                 {photo && (
-                  <Box mt={1}>
+                  <Box mt={1.5} display="flex" justifyContent="center">
                     <img
                       src={URL.createObjectURL(photo)}
                       alt="photo preview"
-                      style={{ width: 80, borderRadius: 6 }}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: "cover",
+                        borderRadius: 14,
+                        border: "2px solid rgba(255, 255, 255, 0.1)",
+                      }}
                     />
                   </Box>
                 )}
@@ -268,10 +407,21 @@ export default function Register() {
                   variant="outlined"
                   component="label"
                   fullWidth
-                  sx={{ textTransform: "none" }}
-                  size="small"
+                  startIcon={<CloudUpload />}
+                  sx={{
+                    py: 1.5,
+                    borderStyle: "dashed",
+                    borderWidth: "1.5px",
+                    borderRadius: "14px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    "&:hover": {
+                      borderColor: "rgba(129, 140, 248, 0.5)",
+                      background: "rgba(129, 140, 248, 0.05)",
+                    },
+                  }}
                 >
-                  Upload College ID
+                  Upload ID Card
                   <input
                     type="file"
                     accept="image/*"
@@ -280,33 +430,61 @@ export default function Register() {
                   />
                 </Button>
                 {collegeIdCard && (
-                  <Box mt={1}>
+                  <Box mt={1.5} display="flex" justifyContent="center">
                     <img
                       src={URL.createObjectURL(collegeIdCard)}
                       alt="id preview"
-                      style={{ width: 80, borderRadius: 6 }}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: "cover",
+                        borderRadius: 14,
+                        border: "2px solid rgba(255, 255, 255, 0.1)",
+                      }}
                     />
                   </Box>
                 )}
               </Box>
-            </Box>
+            </Stack>
 
             {/* Submit */}
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               disabled={loading}
-              size="medium"
-              sx={{ mt: 2, py: 1.3, fontWeight: "bold" }}
+              size="large"
+              startIcon={<PersonAdd />}
+              sx={{
+                py: 1.6,
+                fontWeight: 700,
+                fontSize: "1rem",
+                borderRadius: "14px",
+                mt: 2,
+                background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
+                boxShadow: "0 10px 20px -5px rgba(79, 70, 229, 0.3)",
+                textTransform: "none",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #4338CA 0%, #4F46E5 100%)",
+                },
+              }}
             >
-              {loading ? "Creating..." : "Create Account"}
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </Stack>
         </form>
 
-        <Typography mt={3} variant="body2" textAlign="center">
-          Already have an account? <Link to="/login">Login</Link>
+        <Typography mt={4} variant="body2" textAlign="center" sx={{ color: "rgba(255, 255, 255, 0.5)" }}>
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            style={{
+              textDecoration: "none",
+              color: "#818CF8",
+              fontWeight: 600,
+            }}
+          >
+            Login here
+          </Link>
         </Typography>
       </Paper>
     </Box>

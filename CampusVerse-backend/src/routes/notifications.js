@@ -128,4 +128,20 @@ router.post("/accept", async (req, res) => {
   }
 });
 
+// Reject friend request
+router.post("/reject", async (req, res) => {
+  const { from, to } = req.body; // 'from' sent request, 'to' rejecting
+
+  try {
+    await Notification.findOneAndUpdate(
+      { from, to, type: "request" },
+      { status: "rejected" }
+    );
+
+    res.status(200).json({ message: "Friend request rejected" });
+  } catch (err) {
+    res.status(500).json({ message: "Error rejecting request", error: err });
+  }
+});
+
 export default router;

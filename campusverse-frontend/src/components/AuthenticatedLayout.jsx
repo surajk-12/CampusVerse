@@ -30,8 +30,8 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          maxWidth: "calc(100% - 280px)", // Adjust sidebar width here
+          minWidth: 0,         // prevents flex blowout
+          overflowX: "hidden", // stops Grid negative-margin horizontal scroll
           overflowY: "auto",
         }}
       >
