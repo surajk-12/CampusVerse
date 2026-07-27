@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios.js";
 
 export default function Connections() {
-  const { user } = useAuth();
+  const { user, markConnectionsAsSeen } = useAuth();
   const nav = useNavigate();
   const [friendsList, setFriendsList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,10 +21,19 @@ export default function Connections() {
     if (!user?._id) return;
     setLoading(true);
     api.get(`/users/${user._id}`)
-      .then(({ data }) => setFriendsList(data.friends || []))
+      .then(({ data }) => {
+        const list = data.friends || [];
+        setFriendsList(list);
+      })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, [user?._id]);
+
+  useEffect(() => {
+    if (friendsList.length > 0 && markConnectionsAsSeen) {
+      markConnectionsAsSeen();
+    }
+  }, [friendsList, markConnectionsAsSeen]);
 
   if (!user) return null;
 
@@ -39,116 +48,159 @@ export default function Connections() {
   });
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" fontWeight={800}>My Connections</Typography>
-        <Typography variant="body2" color="text.secondary">
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <Box sx={{ mb: 2.5 }}>
+        <Typography variant="h5" fontWeight={900}>My Connections</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           All your campus friends and peers in one place.
         </Typography>
       </Box>
 
-      <Paper elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "20px", overflow: "hidden" }}>
-        {/* Header bar */}
-        <Box sx={{ px: 3, py: 2.5, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: 2 }}>
-          <Box>
-            <Typography variant="subtitle1" fontWeight={800}>Network ({filtered.length})</Typography>
-            <Typography variant="caption" color="text.secondary">{friendsList.length} total connection{friendsList.length !== 1 ? "s" : ""} in your network</Typography>
-          </Box>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <TextField
-              placeholder="Search connections..."
-              size="small"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{
-                minWidth: 220,
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(255, 255, 255, 0.03)",
-                  borderRadius: "10px",
-                },
-              }}
-              InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: "text.secondary" }} /></InputAdornment> }}
-            />
-            <Button variant="outlined" size="small" startIcon={<PersonAdd />} onClick={() => nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })} sx={{ borderRadius: "10px", fontWeight: 700, borderWidth: "1.5px", whiteSpace: "nowrap" }}>
-              Find Peers
-            </Button>
-          </Stack>
+      {/* 1. Search Block Header Panel */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 2.5,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "0px",
+          background: "rgba(30, 41, 59, 0.15)",
+          backdropFilter: "blur(12px)",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="subtitle2" fontWeight="900" color="text.primary">Network ({filtered.length})</Typography>
+          <Typography variant="caption" color="text.secondary">{friendsList.length} total connections in your network</Typography>
         </Box>
-
-        {loading ? (
-          <Box sx={{ textAlign: "center", py: 10 }}>
-            <CircularProgress size={36} />
-            <Typography variant="body2" color="text.secondary" mt={2}>Loading connections...</Typography>
-          </Box>
-        ) : filtered.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 10 }}>
-            <People sx={{ fontSize: 64, color: "text.disabled", mb: 2 }} />
-            <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={1}>
-              {search ? "No results found" : "No connections yet"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={3}>
-              {search ? "Try a different search term." : "Browse the campus directory to connect with peers."}
-            </Typography>
-            {!search && (
-              <Button variant="contained" onClick={() => nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })} sx={{ borderRadius: "10px", fontWeight: 700 }}>
-                Browse Campus Directory
-              </Button>
-            )}
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  {["#", "Student", "Course", "Branch", "Passing Year", "Email", "Actions"].map((col, ci) => (
-                    <TableCell key={col} align={ci === 6 ? "center" : "left"}
-                      sx={{ fontWeight: 800, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "text.secondary", bgcolor: "rgba(255, 255, 255, 0.02)", borderBottom: "2px solid rgba(255, 255, 255, 0.08)", whiteSpace: "nowrap" }}>
-                      {col}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((friend, idx) => (
-                  <TableRow key={friend._id}
-                    sx={{ bgcolor: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.015)", transition: "background 0.15s", "&:hover": { bgcolor: "rgba(255,255,255,0.03) !important" } }}>
-                    <TableCell sx={{ color: "text.disabled", fontWeight: 600, width: 48 }}>{idx + 1}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Avatar src={friend.photo ? `${apiBase}/uploads/${friend.photo}` : undefined}
-                          sx={{ width: 42, height: 42, bgcolor: "primary.light", fontWeight: 700, fontSize: 16 }}>
-                          {friend.firstName?.[0]}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" fontWeight={700} color="text.primary">{friend.firstName} {friend.lastName}</Typography>
-                          <Chip label="Connected" size="small" color="success" variant="outlined"
-                            sx={{ height: 17, fontSize: "0.6rem", fontWeight: 700, borderRadius: "6px", mt: 0.3 }} />
-                        </Box>
-                      </Stack>
-                    </TableCell>
-                    <TableCell><Typography variant="body2" fontWeight={600}>{friend.course || "—"}</Typography></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{friend.branch || "—"}</Typography></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{friend.passingYear ? `Class of ${friend.passingYear}` : "—"}</Typography></TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {friend.email || "—"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="Open Chat">
-                        <IconButton size="small" color="primary" onClick={() => nav("/chat", { state: { friend } })}
-                          sx={{ bgcolor: "rgba(79,70,229,0.08)", borderRadius: "8px", "&:hover": { bgcolor: "rgba(79,70,229,0.18)" } }}>
-                          <ChatIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField
+            placeholder="Search connections..."
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{
+              minWidth: 200,
+              "& .MuiOutlinedInput-root": {
+                background: "rgba(255, 255, 255, 0.02)",
+                borderRadius: "8px",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                "& fieldset": { border: "none" },
+              },
+            }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: "text.secondary" }} /></InputAdornment> }}
+          />
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PersonAdd sx={{ fontSize: 12 }} />}
+            onClick={() => nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })}
+            sx={{
+              borderRadius: "8px",
+              height: 28,
+              fontWeight: 700,
+              fontSize: "0.72rem",
+              px: 2,
+              borderColor: "rgba(255, 255, 255, 0.12)",
+              textTransform: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Find Peers
+          </Button>
+        </Stack>
       </Paper>
+
+      {/* 2. Main List Panel (Table / Loading / Empty) */}
+      {loading ? (
+        <Paper elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", p: 6, textAlign: "center" }}>
+          <CircularProgress size={36} />
+          <Typography variant="body2" color="text.secondary" mt={2}>Loading connections...</Typography>
+        </Paper>
+      ) : filtered.length === 0 ? (
+        <Paper elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", p: 6, textAlign: "center" }}>
+          <People sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
+          <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={1}>
+            {search ? "No results found" : "No connections yet"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            {search ? "Try a different search term." : "Browse the campus directory to connect with peers."}
+          </Typography>
+          {!search && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })}
+              sx={{ borderRadius: "30px", height: 28, textTransform: "none", fontWeight: 700, fontSize: "0.72rem", px: 2.5 }}
+            >
+              Browse Campus Directory
+            </Button>
+          )}
+        </Paper>
+      ) : (
+        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflow: "hidden" }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                {["#", "Student", "Course", "Branch", "Passing Year", "Email", "Actions"].map((col, ci) => (
+                  <TableCell key={col} align={ci === 6 ? "center" : "left"}>
+                    {col}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.map((friend, idx) => (
+                <TableRow
+                  key={friend._id}
+                  onClick={() => nav(`/profile/${friend._id}`)}
+                  sx={{
+                    cursor: "pointer",
+                    bgcolor: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.015)",
+                    transition: "background 0.15s",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.03) !important" },
+                  }}
+                >
+                  <TableCell sx={{ color: "text.disabled", fontWeight: 600, width: 48 }}>{idx + 1}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar src={friend.photo ? `${apiBase}/uploads/${friend.photo}` : undefined}
+                        sx={{ width: 32, height: 32, bgcolor: "primary.light", fontWeight: 700, fontSize: 13 }}>
+                        {friend.firstName?.[0]}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight={700} color="text.primary">{friend.firstName} {friend.lastName}</Typography>
+                        <Chip label="Connected" size="small" color="success" variant="outlined"
+                          sx={{ height: 17, fontSize: "0.6rem", fontWeight: 700, borderRadius: "6px", mt: 0.3 }} />
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell><Typography variant="body2" fontWeight={600}>{friend.course || "—"}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" color="text.secondary">{friend.branch || "—"}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" color="text.secondary">{friend.passingYear ? `Class of ${friend.passingYear}` : "—"}</Typography></TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {friend.email || "—"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="Open Chat">
+                      <IconButton size="small" color="primary" onClick={() => nav("/chat", { state: { friend } })}
+                        sx={{ bgcolor: "rgba(79,70,229,0.08)", borderRadius: "8px", "&:hover": { bgcolor: "rgba(79,70,229,0.18)" } }}>
+                        <ChatIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 }

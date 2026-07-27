@@ -42,6 +42,13 @@ export default function NavBar() {
     nav(newValue === "home" ? "/" : `/${newValue}`);
   };
 
+  const publicPaths = ["/", "/login", "/register", "/register/student"];
+  const isPublicPath = publicPaths.includes(location.pathname);
+
+  if (user && !isPublicPath) {
+    return null;
+  }
+
   return (
     <AppBar
       position="sticky"

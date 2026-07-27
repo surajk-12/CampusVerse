@@ -13,12 +13,13 @@ import ForumIcon from "@mui/icons-material/Forum";
 import SchoolIcon from "@mui/icons-material/School";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import BoltIcon from "@mui/icons-material/Bolt";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import EventIcon from "@mui/icons-material/Event";
 
 const NAV_SECTIONS = [
   {
     label: "Main",
     items: [
-      { label: "Dashboard", icon: DashboardIcon, path: "/dashboard", badge: null },
       { label: "Quick Actions", icon: BoltIcon, path: "/quick-actions", badge: null },
     ],
   },
@@ -26,14 +27,12 @@ const NAV_SECTIONS = [
     label: "My Profile",
     items: [
       { label: "Student Profile", icon: AccountCircleIcon, path: "/profile", badge: null },
-      { label: "My Connections", icon: PeopleAltIcon, path: "/connections", badgeKey: "friends" },
     ],
   },
   {
     label: "Social",
     items: [
       { label: "Friend Requests", icon: NotificationsIcon, path: "/notifications", badgeKey: "pending" },
-      { label: "Campus Messenger", icon: ForumIcon, path: "/chat", badge: null },
     ],
   },
   {
@@ -46,7 +45,17 @@ const NAV_SECTIONS = [
 ];
 
 export default function MySidebar() {
-  const { user, notifications, friends } = useAuth();
+  const {
+    user,
+    notifications,
+    friends,
+    refreshNotifications,
+    refreshFriends,
+    seenNotificationsCount,
+    seenFriendsCount,
+    markNotificationsAsSeen,
+    markConnectionsAsSeen
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
@@ -63,12 +72,49 @@ export default function MySidebar() {
       .finally(() => setLoading(false));
   }, [user?.college]);
 
+  // Auto-refresh badge counts on every route change
+  useEffect(() => {
+    if (!user?._id) return;
+
+    // Always refresh notifications to keep badge accurate
+    refreshNotifications(user._id);
+
+    // Refresh friends list when visiting /connections or /chat
+    if (
+      location.pathname === "/connections" ||
+      location.pathname === "/chat" ||
+      location.pathname === "/notifications"
+    ) {
+      refreshFriends(user._id);
+    }
+
+    // Clear notification badge immediately when user is on the notifications page
+    if (location.pathname === "/notifications") {
+      markNotificationsAsSeen();
+    }
+
+    // Clear connections badge immediately when user is on the connections page
+    if (location.pathname === "/connections") {
+      markConnectionsAsSeen();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, user?._id]);
+
   const avatarUrl = user?.photo ? `${apiBase}/uploads/${user.photo}` : undefined;
+
+  // Calculate unseen counts
   const pendingCount = notifications.filter((n) => n.status === "pending").length;
+  const unseenNotificationsCount = seenNotificationsCount !== null && pendingCount > seenNotificationsCount
+    ? pendingCount - seenNotificationsCount
+    : 0;
+
+  const unseenFriendsCount = seenFriendsCount !== null && friends.length > seenFriendsCount
+    ? friends.length - seenFriendsCount
+    : 0;
 
   const getBadge = (item) => {
-    if (item.badgeKey === "pending") return pendingCount || null;
-    if (item.badgeKey === "friends") return friends?.length || null;
+    if (item.badgeKey === "pending") return unseenNotificationsCount || null;
+    if (item.badgeKey === "friends") return unseenFriendsCount || null;
     return item.badge;
   };
 
@@ -77,9 +123,35 @@ export default function MySidebar() {
       navigate(`/colleges/${user.college}/students`, { state: { collegeId: user.college, collegeName: collegeDetails?.collegeName } });
     } else if (path === "browse-students") {
       navigate("/dashboard");
+    } else if (path === "/profile") {
+      navigate(`/profile/${user._id}`);
     } else {
       navigate(path);
     }
+  };
+
+  const isItemActive = (item) => {
+    if (location.pathname === item.path) return true;
+
+    if (item.path === "my-college") {
+      return user?.college && location.pathname === `/colleges/${user.college}/students`;
+    }
+
+    if (item.path === "browse-students") {
+      return (
+        location.pathname.startsWith("/colleges/") &&
+        (!user?.college || location.pathname !== `/colleges/${user.college}/students`)
+      );
+    }
+
+    if (item.path === "/dashboard") {
+      return (
+        location.pathname === "/dashboard" ||
+        (location.pathname.startsWith("/colleges/") && !location.pathname.endsWith("/students"))
+      );
+    }
+
+    return false;
   };
 
   return (
@@ -119,7 +191,7 @@ export default function MySidebar() {
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const badge = getBadge(item);
-                const isActive = location.pathname === item.path || (item.path === "/dashboard" && location.pathname === "/dashboard");
+                const isActive = isItemActive(item);
                 return (
                   <Box
                     key={item.path}

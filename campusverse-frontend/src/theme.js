@@ -92,14 +92,25 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          padding: "10px 24px",
+          borderRadius: 10,
           transition: "all 0.2s ease-in-out",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.15)",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.12)",
           ":hover": {
             transform: "translateY(-1px)",
-            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
+            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.25)",
           },
+        },
+        sizeSmall: {
+          padding: "4px 12px",
+          fontSize: "0.72rem",
+        },
+        sizeMedium: {
+          padding: "6px 16px",
+          fontSize: "0.82rem",
+        },
+        sizeLarge: {
+          padding: "9px 22px",
+          fontSize: "0.9rem",
         },
         containedPrimary: {
           background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
@@ -174,21 +185,30 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         root: {
-          borderColor: "rgba(255, 255, 255, 0.06)",
-          color: "rgba(255, 255, 255, 0.8)",
+          borderColor: "rgba(255, 255, 255, 0.05)",
+          color: "rgba(248, 250, 252, 0.85)",
+          padding: "6px 16px",
+          fontSize: "0.82rem",
+          fontWeight: 500,
         },
         head: {
-          backgroundColor: "rgba(255, 255, 255, 0.02)",
+          backgroundColor: "#1E293B !important",
           color: "#94A3B8",
-          fontWeight: 800,
+          fontWeight: 700,
+          fontSize: "0.75rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          borderBottom: "2px solid rgba(99, 102, 241, 0.35)",
+          whiteSpace: "nowrap",
         },
       },
     },
     MuiTableRow: {
       styleOverrides: {
         root: {
+          transition: "all 0.15s ease-in-out",
           "&.MuiTableRow-hover:hover": {
-            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            backgroundColor: "rgba(255, 255, 255, 0.02) !important",
           },
         },
       },

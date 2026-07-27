@@ -29,11 +29,14 @@ import {
   VolumeUp,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios.js";
+import { io } from "socket.io-client";
 
 export default function Chat() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
   const location = useLocation();
   const preSelectedFriend = location.state?.friend;
@@ -53,10 +56,17 @@ export default function Chat() {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // Typing indicator state
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+
   // Attachment state variables
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Socket.io ref — persists across renders without causing re-renders
+  const socketRef = useRef(null);
 
   // Call state variables
   const [callActive, setCallActive] = useState(false);
@@ -88,9 +98,49 @@ export default function Chat() {
     fetchFriends();
   }, [user?._id]);
 
-  // Load chat history & poll for updates every 3 seconds
+  // ─── Socket.io Lifecycle ───────────────────────────────────────────────────
+  // Connect socket once when user is available, disconnect on unmount.
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const token = localStorage.getItem("cv_token");
+    if (!token) return;
+
+    const SOCKET_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
+
+    const socket = io(SOCKET_URL, {
+      auth: { token }, // JWT sent in handshake — validated by server middleware
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    // Listen for incoming real-time messages
+    socket.on("receive-message", (msg) => {
+      setMessages((prev) => {
+        // Prevent duplicates (in case REST call already added the message)
+        if (prev.some((m) => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
+    });
+
+    // Typing indicator events
+    socket.on("user-typing", () => setPartnerTyping(true));
+    socket.on("user-stop-typing", () => setPartnerTyping(false));
+
+    socket.on("error", (err) => console.error("Socket error:", err.message));
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?._id]);
+
+  // ─── Load Chat History + Join Room ──────────────────────────────────────────
+  // Whenever the selected friend changes, load history from REST + join the socket room.
   useEffect(() => {
     if (!selectedFriend?._id) return;
+    setPartnerTyping(false);
 
     const fetchHistory = async () => {
       try {
@@ -102,9 +152,11 @@ export default function Chat() {
     };
 
     fetchHistory();
-    const interval = setInterval(fetchHistory, 3000);
 
-    return () => clearInterval(interval);
+    // Tell the server to join our private room
+    if (socketRef.current) {
+      socketRef.current.emit("join-room", { partnerId: selectedFriend._id });
+    }
   }, [selectedFriend]);
 
   // Scroll to bottom when messages list changes
@@ -139,7 +191,7 @@ export default function Chat() {
 
     // Check count limit
     if (selectedFiles.length + files.length > 10) {
-      alert("You can upload a maximum of 10 attachments per message.");
+      showToast("You can upload a maximum of 10 attachments per message.", "warning");
       return;
     }
 
@@ -173,44 +225,74 @@ export default function Chat() {
     });
   };
 
+  // Handle input change — emit typing events
+  const handleInputChange = (e) => {
+    setInputMessage(e.target.value);
+
+    if (socketRef.current && selectedFriend?._id) {
+      socketRef.current.emit("typing", { recipientId: selectedFriend._id });
+
+      // Debounce: stop typing after 1.5s of inactivity
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socketRef.current?.emit("stop-typing", { recipientId: selectedFriend._id });
+      }, 1500);
+    }
+  };
+
   // Handle message send
   const handleSend = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() && selectedFiles.length === 0) return;
     if (!selectedFriend?._id || sending) return;
 
-    setSending(true);
+    // Stop typing indicator
+    if (socketRef.current) {
+      socketRef.current.emit("stop-typing", { recipientId: selectedFriend._id });
+    }
+    clearTimeout(typingTimeoutRef.current);
 
-    const formData = new FormData();
-    formData.append("recipientId", selectedFriend._id);
-    formData.append("content", inputMessage);
-
-    selectedFiles.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    // Save inputs in case of error
-    const prevText = inputMessage;
-    const prevFiles = [...selectedFiles];
-    const prevPreviews = [...filePreviews];
+    const hasFiles = selectedFiles.length > 0;
+    const text = inputMessage.trim();
 
     // Clear inputs immediately for responsive feedback
     setInputMessage("");
     setSelectedFiles([]);
     setFilePreviews([]);
+    setSending(true);
 
     try {
-      const { data } = await api.post("/chat/send", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setMessages((prev) => [...prev, data]);
+      if (hasFiles) {
+        // Files: must go through REST API (multipart upload)
+        const formData = new FormData();
+        formData.append("recipientId", selectedFriend._id);
+        formData.append("content", text);
+        selectedFiles.forEach((file) => formData.append("files", file));
+
+        const { data } = await api.post("/chat/send", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        // REST response has the saved message with attachments;
+        // broadcast it via socket so recipient gets it in real-time too
+        if (socketRef.current) {
+          socketRef.current.emit("broadcast-message", { message: data, recipientId: selectedFriend._id });
+        }
+        setMessages((prev) => [...prev, data]);
+      } else {
+        // Text-only: send via socket (server saves + broadcasts to room)
+        if (socketRef.current) {
+          socketRef.current.emit("send-message", {
+            recipientId: selectedFriend._id,
+            content: text,
+          });
+          // Message will arrive back via "receive-message" event for both sender and recipient
+        }
+      }
     } catch (err) {
       console.error("Failed to send message", err);
-      alert(err.response?.data?.message || "Failed to send message");
-      // Restore inputs
-      setInputMessage(prevText);
-      setSelectedFiles(prevFiles);
-      setFilePreviews(prevPreviews);
+      showToast(err.response?.data?.message || "Failed to send message", "error");
+      // Restore on error
+      setInputMessage(text);
     } finally {
       setSending(false);
     }
@@ -293,19 +375,20 @@ export default function Chat() {
       sx={{
         display: "flex",
         height: "80vh",
-        border: "1px solid rgba(226, 232, 240, 0.8)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
         borderRadius: "24px",
         overflow: "hidden",
-        bgcolor: "#ffffff",
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.02)",
+        bgcolor: "rgba(30, 41, 59, 0.25)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 20px 40px rgba(0, 0, 0, 0.35)",
       }}
     >
       {/* Left Pane: Friends List */}
       <Box
         sx={{
           width: { xs: 80, sm: 280 },
-          borderRight: "1px solid rgba(226, 232, 240, 0.8)",
-          bgcolor: "rgba(248, 250, 252, 0.55)",
+          borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+          bgcolor: "rgba(15, 23, 42, 0.35)",
           display: "flex",
           flexDirection: "column",
         }}
@@ -318,7 +401,7 @@ export default function Chat() {
             Chat with your verified classmates
           </Typography>
         </Box>
-        <Divider />
+        <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
 
         <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
           {loadingFriends ? (
@@ -355,10 +438,12 @@ export default function Chat() {
                       mx: 1,
                       borderRadius: "14px",
                       cursor: "pointer",
-                      bgcolor: isSelected ? "rgba(79, 70, 229, 0.08)" : "transparent",
+                      bgcolor: isSelected ? "rgba(79, 70, 229, 0.15)" : "transparent",
+                      border: isSelected ? "1px solid rgba(79, 70, 229, 0.25)" : "1px solid transparent",
                       transition: "all 0.2s",
                       "&:hover": {
-                        bgcolor: isSelected ? "rgba(79, 70, 229, 0.08)" : "rgba(241, 245, 249, 0.8)",
+                        bgcolor: isSelected ? "rgba(79, 70, 229, 0.15)" : "rgba(255, 255, 255, 0.03)",
+                        borderColor: isSelected ? "rgba(79, 70, 229, 0.25)" : "rgba(255, 255, 255, 0.06)",
                       },
                       justifyContent: { xs: "center", sm: "flex-start" },
                     }}
@@ -386,18 +471,18 @@ export default function Chat() {
       </Box>
 
       {/* Right Pane: Active Chat Conversation */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", bgcolor: "#ffffff" }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", bgcolor: "rgba(15, 23, 42, 0.1)" }}>
         {selectedFriend ? (
           <>
             {/* Chat header */}
             <Box
               sx={{
                 p: 2,
-                borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                bgcolor: "#ffffff",
+                bgcolor: "rgba(30, 41, 59, 0.4)",
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
@@ -417,17 +502,17 @@ export default function Chat() {
               
               {/* Voice and Video Call Shortcuts */}
               <Stack direction="row" spacing={1}>
-                <IconButton color="primary" onClick={() => startCall("voice")} sx={{ bgcolor: "grey.50" }}>
+                <IconButton color="primary" onClick={() => startCall("voice")} sx={{ bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", "&:hover": { bgcolor: "rgba(255,255,255,0.07)" } }}>
                   <Call />
                 </IconButton>
-                <IconButton color="primary" onClick={() => startCall("video")} sx={{ bgcolor: "grey.50" }}>
+                <IconButton color="primary" onClick={() => startCall("video")} sx={{ bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", "&:hover": { bgcolor: "rgba(255,255,255,0.07)" } }}>
                   <Videocam />
                 </IconButton>
               </Stack>
             </Box>
 
             {/* Chat message bubbles */}
-            <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: "grey.50" }}>
+            <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: "rgba(15, 23, 42, 0.15)" }}>
               {messages.length === 0 ? (
                 <Box
                   sx={{
@@ -460,12 +545,12 @@ export default function Chat() {
                             maxWidth: "70%",
                             p: 1.8,
                             borderRadius: isMe ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
-                            bgcolor: isMe ? "primary.main" : "#ffffff",
-                            color: isMe ? "#ffffff" : "text.primary",
+                            bgcolor: isMe ? "primary.main" : "rgba(255, 255, 255, 0.03)",
+                            color: isMe ? "#ffffff" : "#F1F5F9",
                             boxShadow: isMe 
-                              ? "0 4px 6px -1px rgba(79, 70, 229, 0.2)" 
-                              : "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.03)",
-                            border: isMe ? "none" : "1px solid rgba(226, 232, 240, 0.6)",
+                              ? "0 4px 15px rgba(79, 70, 229, 0.25)" 
+                              : "none",
+                            border: isMe ? "none" : "1px solid rgba(255, 255, 255, 0.06)",
                           }}
                         >
                           {/* Text Message Content */}
@@ -495,7 +580,7 @@ export default function Chat() {
                                             objectFit: "cover",
                                             borderRadius: "12px",
                                             cursor: "pointer",
-                                            border: "1px solid rgba(226, 232, 240, 0.3)",
+                                            border: "1px solid rgba(255, 255, 255, 0.08)",
                                             transition: "transform 0.2s",
                                             "&:hover": { transform: "scale(1.02)" },
                                           }}
@@ -555,6 +640,40 @@ export default function Chat() {
                       </Box>
                     );
                   })}
+                  {/* Typing indicator bubble */}
+                  {partnerTyping && (
+                    <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderRadius: "20px 20px 20px 4px",
+                          bgcolor: "rgba(255, 255, 255, 0.03)",
+                          border: "1px solid rgba(255, 255, 255, 0.06)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        {[0, 1, 2].map((i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: "50%",
+                              bgcolor: "text.secondary",
+                              animation: "bounce 1.2s infinite",
+                              animationDelay: `${i * 0.2}s`,
+                              "@keyframes bounce": {
+                                "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.5 },
+                                "40%": { transform: "scale(1)", opacity: 1 },
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
                   <div ref={messagesEndRef} />
                 </Stack>
               )}
@@ -565,8 +684,8 @@ export default function Chat() {
               <Box
                 sx={{
                   p: 2,
-                  borderTop: "1px solid rgba(226, 232, 240, 0.8)",
-                  bgcolor: "grey.50",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                  bgcolor: "rgba(15, 23, 42, 0.4)",
                   display: "flex",
                   gap: 2,
                   overflowX: "auto",
@@ -580,8 +699,8 @@ export default function Chat() {
                       width: 80,
                       height: 80,
                       borderRadius: "12px",
-                      border: "1px solid #E2E8F0",
-                      bgcolor: "#ffffff",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      bgcolor: "rgba(255,255,255,0.02)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -629,10 +748,11 @@ export default function Chat() {
               onSubmit={handleSend}
               sx={{
                 p: 2,
-                borderTop: "1px solid rgba(226, 232, 240, 0.8)",
+                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
                 display: "flex",
                 gap: 1.5,
                 alignItems: "center",
+                bgcolor: "rgba(30, 41, 59, 0.4)",
               }}
             >
               {/* Paperclip Attach Button */}
@@ -649,9 +769,10 @@ export default function Chat() {
                 onClick={() => fileInputRef.current?.click()}
                 sx={{
                   p: 1.8,
-                  bgcolor: "grey.50",
+                  bgcolor: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
                   borderRadius: "14px",
-                  "&:hover": { bgcolor: "grey.100" },
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.07)" },
                 }}
               >
                 <AttachFile sx={{ transform: "rotate(45deg)" }} />
@@ -663,10 +784,13 @@ export default function Chat() {
                 size="medium"
                 fullWidth
                 value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
+                onChange={handleInputChange}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "14px",
+                    bgcolor: "rgba(255,255,255,0.01)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    "& fieldset": { border: "none" }
                   }
                 }}
               />
@@ -684,8 +808,8 @@ export default function Chat() {
                     bgcolor: "primary.dark",
                   },
                   "&.Mui-disabled": {
-                    bgcolor: "grey.100",
-                    color: "grey.400",
+                    bgcolor: "rgba(255,255,255,0.02)",
+                    color: "rgba(255,255,255,0.2)",
                   }
                 }}
               >

@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema(
     collegeIdCard: { type: String, required: true }, // file path
     photo: { type: String, required: true }, // renamed from livePhoto
     isVerified: { type: Boolean, default: false }, // manual or auto verify later
+    role: { type: String, enum: ["Student", "Organizer"], default: "Student" },
   },
   { timestamps: true }
 );

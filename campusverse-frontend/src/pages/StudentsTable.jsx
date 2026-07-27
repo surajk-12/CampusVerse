@@ -18,13 +18,15 @@ import {
   InputAdornment,
   Stack,
 } from "@mui/material";
-import { Send, CheckCircle, ArrowBack, Search } from "@mui/icons-material";
+import { Send, CheckCircle, ArrowBack, Search, Verified } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 
 export default function StudentsTable({ collegeId: propCollegeId, collegeName: propCollegeName }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const { collegeId: paramCollegeId } = useParams();
   const collegeId = propCollegeId || paramCollegeId;
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
@@ -139,7 +141,7 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
       }
 
       console.error("Failed to send request", err);
-      alert(err.response?.data?.message || "Failed to send request");
+      showToast(err.response?.data?.message || "Failed to send request", "error");
     }
   };
 
@@ -186,6 +188,7 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
           alignItems: { xs: "stretch", sm: "center" },
           gap: 2,
           border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "0px",
           background: "rgba(30, 41, 59, 0.35)",
           backdropFilter: "blur(8px)",
         }}
@@ -240,24 +243,25 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
         sx={{
           border: "1px solid rgba(255, 255, 255, 0.08)",
           overflow: "hidden",
+          borderRadius: "0px",
         }}
       >
         <Table sx={{ minWidth: 800 }}>
           <TableHead>
-            <TableRow sx={{ bgcolor: "rgba(255, 255, 255, 0.02)" }}>
-              <TableCell sx={{ fontWeight: "700", color: "text.secondary", py: 2, pl: 3, width: "10%" }}>
+            <TableRow>
+              <TableCell sx={{ pl: 3, width: "10%" }}>
                 Avatar
               </TableCell>
-              <TableCell sx={{ fontWeight: "700", color: "text.secondary", py: 2 }}>
+              <TableCell>
                 Full Name
               </TableCell>
-              <TableCell sx={{ fontWeight: "700", color: "text.secondary", py: 2 }}>
+              <TableCell>
                 Course / Specialization
               </TableCell>
-              <TableCell sx={{ fontWeight: "700", color: "text.secondary", py: 2, width: "15%" }}>
+              <TableCell sx={{ width: "15%" }}>
                 Passing Year
               </TableCell>
-              <TableCell sx={{ fontWeight: "700", color: "text.secondary", py: 2, pr: 3, width: "20%", textAlign: "center" }}>
+              <TableCell sx={{ pr: 3, width: "20%", textAlign: "center" }}>
                 Actions
               </TableCell>
             </TableRow>
@@ -278,35 +282,107 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
                 return (
                   <TableRow
                     key={student._id}
-                    hover
+                    hover={!isFriend}
+                    onClick={() => {
+                      if (!isMe) navigate(`/profile/${student._id}`);
+                    }}
                     sx={{
-                      transition: "background-color 0.2s",
-                      "&:hover": { bgcolor: "rgba(79, 70, 229, 0.02)" },
+                      cursor: isMe ? "default" : "pointer",
+                      transition: "all 0.2s",
+                      position: "relative",
+                      // Friend rows get a distinct green glow highlight
+                      ...(isFriend && !isMe && {
+                        bgcolor: "rgba(16, 185, 129, 0.03) !important",
+                        borderLeft: "3px solid rgba(16, 185, 129, 0.5)",
+                        "&:hover": {
+                          bgcolor: "rgba(16, 185, 129, 0.07) !important",
+                          boxShadow: "inset 0 0 20px rgba(16, 185, 129, 0.06)",
+                        },
+                      }),
+                      ...(!isFriend && !isMe && {
+                        "&:hover": { bgcolor: "rgba(79, 70, 229, 0.03)" },
+                      }),
                     }}
                   >
-                    <TableCell sx={{ py: 2, pl: 3 }}>
-                      <Avatar
-                        src={student.photo ? `${apiBase}/uploads/${student.photo}` : undefined}
-                        alt={student.firstName}
-                        sx={{ width: 44, height: 44, bgcolor: "primary.light" }}
-                      >
-                        {student.firstName?.[0]}
-                      </Avatar>
+                    <TableCell sx={{ pl: isFriend ? 2 : 3 }}>
+                      <Box sx={{ position: "relative", display: "inline-block" }}>
+                        <Avatar
+                          src={student.photo ? `${apiBase}/uploads/${student.photo}` : undefined}
+                          alt={student.firstName}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: "primary.light",
+                            fontSize: 13,
+                            ...(isFriend && {
+                              border: "1.5px solid rgba(16, 185, 129, 0.6)",
+                              boxShadow: "0 0 6px rgba(16, 185, 129, 0.2)",
+                            }),
+                          }}
+                        >
+                          {student.firstName?.[0]}
+                        </Avatar>
+                        {/* Green dot indicator for friends */}
+                        {isFriend && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              bottom: 0,
+                              right: 0,
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              bgcolor: "#10B981",
+                              border: "1.5px solid rgba(15, 23, 42, 0.9)",
+                              boxShadow: "0 0 4px rgba(16, 185, 129, 0.5)",
+                            }}
+                          />
+                        )}
+                      </Box>
                     </TableCell>
-                    <TableCell sx={{ py: 2, fontWeight: 700, color: "text.primary" }}>
-                      {student.firstName} {student.lastName} {isMe && "(You)"}
+                    <TableCell sx={{ fontWeight: 700, color: isFriend ? "#34D399" : "text.primary" }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <span>{student.firstName} {student.lastName} {isMe && "(You)"}</span>
+                        {isFriend && (
+                          <Chip
+                            icon={<Verified sx={{ fontSize: "14px !important", color: "#10B981 !important" }} />}
+                            label="Friend"
+                            size="small"
+                            sx={{
+                              bgcolor: "rgba(16,185,129,0.08)",
+                              color: "#10B981",
+                              border: "1px solid rgba(16,185,129,0.2)",
+                              fontWeight: 700,
+                              fontSize: "0.68rem",
+                              height: 22,
+                              "& .MuiChip-icon": { ml: 0.5 },
+                            }}
+                          />
+                        )}
+                      </Stack>
                     </TableCell>
-                    <TableCell sx={{ py: 2, color: "text.secondary", fontWeight: 500 }}>
+                    <TableCell sx={{ color: "text.secondary" }}>
                       {student.course || "—"} / {student.branch || "—"}
                     </TableCell>
-                    <TableCell sx={{ py: 2, color: "text.secondary", fontWeight: 500 }}>
+                    <TableCell sx={{ color: "text.secondary" }}>
                       {student.passingYear || "—"}
                     </TableCell>
-                    <TableCell sx={{ py: 2, pr: 3, textAlign: "center" }}>
+                    <TableCell sx={{ pr: 3, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
                       {isMe ? (
                         <Chip label="Me" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                       ) : isFriend ? (
-                        <Chip icon={<CheckCircle />} label="Friends" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+                        <Chip
+                          icon={<CheckCircle sx={{ fontSize: "16px !important" }} />}
+                          label="Connected"
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(16,185,129,0.1)",
+                            color: "#10B981",
+                            border: "1px solid rgba(16,185,129,0.3)",
+                            fontWeight: 700,
+                            boxShadow: "0 0 8px rgba(16,185,129,0.15)",
+                          }}
+                        />
                       ) : status === "sent" ? (
                         <Chip icon={<CheckCircle />} label="Request Sent" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
                       ) : status === "accepted" ? (

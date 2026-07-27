@@ -10,16 +10,22 @@ import LandingPage from "./pages/LandingPage.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthenticatedLayout from "./components/AuthenticatedLayout";
 import MySidebar from "./components/MySidebar.jsx";
-// import StudentsTable from "./pages/StudentsTable.jsx";
 import CollegeDetails from "./pages/CollegeDetails.jsx";
 import StudentsPage from "./pages/StudentPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
 import Chat from "./pages/Chat.jsx";
 import MyProfile from "./pages/MyProfile.jsx";
+import UserProfile from "./pages/UserProfile.jsx";
 import Connections from "./pages/Connections.jsx";
 import QuickActions from "./pages/QuickActions.jsx";
+import Feed from "./pages/Feed.jsx";
+import EventsPage from "./pages/EventsPage.jsx";
+import NotesPage from "./pages/NotesPage.jsx";
+import MarketplacePage from "./pages/MarketplacePage.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
 
 export default function App() {
+  const { user } = useAuth();
   return (
     <>
       <Box
@@ -121,12 +127,64 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <Feed />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/events"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <EventsPage />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notes"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <NotesPage />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketplace"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <MarketplacePage />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* User Profile (friend or own) */}
+            <Route
+              path="/profile/:userId"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <UserProfile />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Fallback */}
             <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
           </Routes>
         </Box>
-        <Footer />
+        {!user && <Footer />}
       </Box>
     </>
   );

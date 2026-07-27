@@ -28,6 +28,7 @@ import {
 } from "@mui/icons-material";
 import api from "../api/axios.js";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext.jsx";
 
 const LandingPage = () => {
   const [colleges, setColleges] = useState([]);
@@ -35,6 +36,7 @@ const LandingPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const selectionRef = useRef(null);
 
   useEffect(() => {
@@ -67,7 +69,7 @@ const LandingPage = () => {
 
   const handleProceed = () => {
     if (!selectedCollege) {
-      alert("Please select your college first!");
+      showToast("Please select your college first!", "warning");
       return;
     }
 

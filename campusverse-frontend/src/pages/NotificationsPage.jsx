@@ -8,17 +8,29 @@ import {
   CircularProgress,
   Divider,
   Avatar,
+  Chip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import { Check, Close, Group } from "@mui/icons-material";
+import { Check, Close, Group, Forum } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios.js";
 
 export default function NotificationsPage() {
-  const { user, setFriends } = useAuth();
+  const { user, setFriends, markNotificationsAsSeen, refreshFriends } = useAuth();
+  const nav = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
+
+  // Mark notifications as seen immediately on page mount — clears sidebar badge
+  useEffect(() => {
+    markNotificationsAsSeen();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch notifications
   useEffect(() => {
@@ -55,7 +67,23 @@ export default function NotificationsPage() {
           )
         );
 
-        setFriends((prev) => [...prev, notification.from._id]);
+        setFriends((prev) => [...prev, notification.from]);
+
+        // Sync friends count in sidebar immediately
+        if (refreshFriends) refreshFriends(user._id);
+
+        // Show success snackbar then redirect to chat
+        setSnackbar({
+          open: true,
+          message: `🎉 You are now connected with ${notification.from.firstName}! Redirecting to chat...`,
+          severity: "success",
+        });
+
+        // Redirect to chat with this friend pre-selected after 2 seconds
+        setTimeout(() => {
+          nav("/chat", { state: { friend: notification.from } });
+        }, 2000);
+
       } else if (action === "rejected") {
         await api.post("/notifications/reject", {
           from: notification.from._id,
@@ -67,10 +95,20 @@ export default function NotificationsPage() {
             n._id === notification._id ? { ...n, status: "rejected" } : n
           )
         );
+
+        setSnackbar({
+          open: true,
+          message: "Request declined.",
+          severity: "info",
+        });
       }
     } catch (err) {
       console.error("Failed to update notification", err);
-      alert(err.response?.data?.message || "Action failed");
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Action failed. Please try again.",
+        severity: "error",
+      });
     }
   };
 
@@ -90,40 +128,41 @@ export default function NotificationsPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Paper
-        elevation={1}
-        sx={{
-          p: 3,
-          mb: 4,
-          border: "1px solid rgba(226, 232, 240, 0.8)",
-          background: "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <Typography variant="h5" fontWeight="800" color="primary.main">
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          fontWeight={900}
+          sx={{
+            background: "linear-gradient(135deg, #FFFFFF 0%, rgba(255,255,255,0.7) 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
           Friend Requests
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Manage incoming requests and expand your campus network
         </Typography>
-      </Paper>
+      </Box>
 
       {notifications.length === 0 ? (
         <Paper
-          variant="outlined"
+          elevation={0}
           sx={{
-            py: 8,
+            py: 10,
             textAlign: "center",
-            borderColor: "rgba(226, 232, 240, 0.8)",
-            borderRadius: "20px",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            borderRadius: "24px",
+            bgcolor: "rgba(255, 255, 255, 0.01)",
           }}
         >
-          <Group sx={{ fontSize: 60, color: "text.secondary", mb: 2, opacity: 0.3 }} />
+          <Group sx={{ fontSize: 60, color: "text.secondary", mb: 2, opacity: 0.2 }} />
           <Typography variant="h6" color="text.secondary" fontWeight="600">
             No notifications at the moment
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            When peers send you requests, they will show up here.
+            When peers send you friend requests, they will show up here.
           </Typography>
         </Paper>
       ) : (
@@ -136,7 +175,7 @@ export default function NotificationsPage() {
             return (
               <Paper
                 key={notif._id}
-                elevation={1}
+                elevation={0}
                 sx={{
                   p: 2.5,
                   borderRadius: "20px",
@@ -146,28 +185,37 @@ export default function NotificationsPage() {
                   justifyContent: "space-between",
                   gap: 2,
                   border: "1px solid",
-                  borderColor: isAccepted 
-                    ? "rgba(16, 185, 129, 0.15)" 
-                    : isRejected 
-                    ? "rgba(239, 68, 68, 0.15)" 
-                    : "rgba(226, 232, 240, 0.8)",
-                  bgcolor: isAccepted 
-                    ? "rgba(16, 185, 129, 0.02)" 
-                    : isRejected 
-                    ? "rgba(239, 68, 68, 0.02)" 
-                    : "#fff",
+                  borderColor: isAccepted
+                    ? "rgba(16, 185, 129, 0.2)"
+                    : isRejected
+                    ? "rgba(239, 68, 68, 0.15)"
+                    : "rgba(255, 255, 255, 0.08)",
+                  bgcolor: isAccepted
+                    ? "rgba(16, 185, 129, 0.04)"
+                    : isRejected
+                    ? "rgba(239, 68, 68, 0.03)"
+                    : "rgba(255, 255, 255, 0.015)",
+                  backdropFilter: "blur(8px)",
                   transition: "all 0.2s ease-in-out",
-                  "&:hover": { 
-                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.03)",
-                    transform: "translateY(-1px)",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
                   },
                 }}
               >
+                {/* Left: Sender Info */}
                 <Stack direction="row" spacing={2.5} alignItems="center" flex={1}>
                   <Avatar
                     src={notif.from.photo ? `${apiBase}/uploads/${notif.from.photo}` : undefined}
                     alt={notif.from.firstName}
-                    sx={{ width: 56, height: 56, bgcolor: "primary.light" }}
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      bgcolor: "primary.light",
+                      boxShadow: isAccepted
+                        ? "0 0 12px rgba(16, 185, 129, 0.3)"
+                        : "0 0 12px rgba(99, 102, 241, 0.2)",
+                    }}
                   >
                     {notif.from.firstName?.[0]}
                   </Avatar>
@@ -184,6 +232,7 @@ export default function NotificationsPage() {
                   </Box>
                 </Stack>
 
+                {/* Right: Actions or Status */}
                 <Stack direction="row" spacing={1.5} justifyContent="flex-end" alignItems="center">
                   {isPending ? (
                     <>
@@ -193,7 +242,12 @@ export default function NotificationsPage() {
                         size="medium"
                         startIcon={<Check />}
                         onClick={() => handleAction(notif, "accepted")}
-                        sx={{ borderRadius: "10px", py: 1 }}
+                        sx={{
+                          borderRadius: "12px",
+                          py: 1,
+                          fontWeight: 700,
+                          boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                        }}
                       >
                         Accept
                       </Button>
@@ -203,19 +257,43 @@ export default function NotificationsPage() {
                         size="medium"
                         startIcon={<Close />}
                         onClick={() => handleAction(notif, "rejected")}
-                        sx={{ borderRadius: "10px", py: 1 }}
+                        sx={{
+                          borderRadius: "12px",
+                          py: 1,
+                          fontWeight: 700,
+                          borderColor: "rgba(239, 68, 68, 0.4)",
+                          "&:hover": { borderColor: "error.main", bgcolor: "rgba(239,68,68,0.04)" },
+                        }}
                       >
                         Reject
                       </Button>
                     </>
                   ) : (
-                    <Chip
-                      icon={isAccepted ? <Check /> : <Close />}
-                      label={isAccepted ? "Accepted" : "Rejected"}
-                      color={isAccepted ? "success" : "error"}
-                      variant="outlined"
-                      sx={{ fontWeight: "bold", px: 1 }}
-                    />
+                    <Stack spacing={1} alignItems="flex-end">
+                      <Chip
+                        icon={isAccepted ? <Check /> : <Close />}
+                        label={isAccepted ? "Connected" : "Rejected"}
+                        color={isAccepted ? "success" : "error"}
+                        variant="outlined"
+                        sx={{ fontWeight: 700, px: 1 }}
+                      />
+                      {isAccepted && (
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<Forum sx={{ fontSize: 16 }} />}
+                          onClick={() => nav("/chat", { state: { friend: notif.from } })}
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "0.75rem",
+                            color: "primary.main",
+                            "&:hover": { bgcolor: "rgba(79, 70, 229, 0.08)" },
+                          }}
+                        >
+                          Open Chat
+                        </Button>
+                      )}
+                    </Stack>
                   )}
                 </Stack>
               </Paper>
@@ -223,6 +301,23 @@ export default function NotificationsPage() {
           })}
         </Stack>
       )}
+
+      {/* Success / Info / Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ borderRadius: "12px", fontWeight: 600 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
