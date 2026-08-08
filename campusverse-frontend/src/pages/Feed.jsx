@@ -8,12 +8,13 @@ import {
   ArrowUpward, ArrowDownward, Comment as CommentIcon,
   Delete, Campaign, Security, Send, School, AccountCircle,
   AttachFile, Close, VideoLibrary, Image, PlayCircleOutline,
-  Info, Shield, Star, TrendingUp, LocationOn,
+  Info, Shield, Star, TrendingUp, LocationOn, SmartToy,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
 import api from "../api/axios.js";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 export default function Feed() {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ export default function Feed() {
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Post Attachments State
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -271,11 +273,15 @@ export default function Feed() {
     );
   }
 
+  const postsToDisplay = aiFilteredIds
+    ? posts.filter((post) => aiFilteredIds.includes(post._id))
+    : posts;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Grid container spacing={4}>
         {/* Left Column: Feed Content & Editor */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           {/* Header Banner */}
           <Paper
             elevation={0}
@@ -303,6 +309,13 @@ export default function Feed() {
               </Typography>
             </Box>
           </Paper>
+
+          {/* AI Copilot Search Bar */}
+          <AiCopilot
+            type="feed"
+            data={posts}
+            onAiFilter={(ids) => setAiFilteredIds(ids)}
+          />
 
           {/* Create Post Area */}
           <Paper
@@ -545,9 +558,28 @@ export default function Feed() {
                 Be the first to share something with your campus!
               </Typography>
             </Paper>
+          ) : postsToDisplay.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                py: 10,
+                textAlign: "center",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "24px",
+                bgcolor: "rgba(255, 255, 255, 0.01)",
+              }}
+            >
+              <SmartToy sx={{ fontSize: 60, color: "text.secondary", mb: 2, opacity: 0.15 }} />
+              <Typography variant="h6" color="text.secondary" fontWeight="700">
+                No posts match AI filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Try adjusting your search query or clear the AI filter to see all posts.
+              </Typography>
+            </Paper>
           ) : (
             <Stack spacing={3}>
-              {posts.map((post) => {
+              {postsToDisplay.map((post) => {
                 const hasUpvoted = post.upvotes?.includes(user._id);
                 const hasDownvoted = post.downvotes?.includes(user._id);
                 const isMyPost = post.isEditable;
@@ -957,7 +989,7 @@ export default function Feed() {
         </Grid>
 
         {/* Right Column: Widgets */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           {/* College Profile widget */}
           <Paper
             elevation={0}

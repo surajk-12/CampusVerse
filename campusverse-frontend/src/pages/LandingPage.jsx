@@ -153,7 +153,7 @@ const LandingPage = () => {
       {/* ─── Hero Section ─── */}
       <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 15 }, pb: { xs: 8, md: 12 }, position: "relative", zIndex: 1 }}>
         <Grid container spacing={6} alignItems="center">
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Box
               sx={{
                 display: "inline-flex",
@@ -267,7 +267,7 @@ const LandingPage = () => {
             </Stack>
           </Grid>
 
-          <Grid item xs={12} md={5} sx={{ display: { xs: "none", md: "block" } }}>
+          <Grid size={{ xs: 12, md: 5 }} sx={{ display: { xs: "none", md: "block" } }}>
             {/* Visual Glassmorphic Mockup Cards */}
             <Box sx={{ position: "relative", height: "450px" }}>
               <Box
@@ -596,7 +596,7 @@ const LandingPage = () => {
                   </Stack>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Button
                         fullWidth
                         variant="contained"
@@ -614,7 +614,7 @@ const LandingPage = () => {
                         Explore Student Directory
                       </Button>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Button
                         fullWidth
                         variant="outlined"

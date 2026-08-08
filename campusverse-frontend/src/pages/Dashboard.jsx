@@ -8,6 +8,7 @@ import { Search, School, People, Notifications, Class } from "@mui/icons-materia
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios.js";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 export default function Dashboard() {
   const { user, notifications, friends } = useAuth();
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(10);
   const [myCollegeDetails, setMyCollegeDetails] = useState(null);
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   useEffect(() => {
     api.get("/colleges")
@@ -41,6 +43,9 @@ export default function Dashboard() {
   const pendingRequests = notifications.filter((n) => n.status === "pending").length;
 
   const filteredColleges = colleges.filter((c) => {
+    const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(c._id);
+    if (!isAiMatched) return false;
+
     const q = search.toLowerCase();
     return (
       (c.collegeName || c.name || "").toLowerCase().includes(q) ||
@@ -88,7 +93,7 @@ export default function Dashboard() {
           { icon: <Notifications sx={{ fontSize: 20 }} />, value: pendingRequests, label: "Pending Invites", sub: "Friend requests awaiting review", bg: "rgba(236,72,153,0.08)", color: "secondary.main" },
           { icon: <Class sx={{ fontSize: 20 }} />, value: myCollegeDetails?.students?.length || 0, label: "Campus Peers", sub: "Registered classmates", bg: "rgba(16,185,129,0.08)", color: "success.main" },
         ].map((m) => (
-          <Grid item xs={12} md={4} key={m.label}>
+          <Grid size={{ xs: 12, sm: 4, md: 4 }} key={m.label}>
             <Card sx={{ bgcolor: "background.paper", height: "100%" }}>
               <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.2}>
@@ -102,6 +107,13 @@ export default function Dashboard() {
           </Grid>
         ))}
       </Grid>
+
+      {/* AI Search Assistant */}
+      <AiCopilot
+        type="dashboard"
+        data={colleges}
+        onAiFilter={(ids) => setAiFilteredIds(ids)}
+      />
 
       {/* 3. Table Header */}
       <Paper
@@ -150,7 +162,7 @@ export default function Dashboard() {
       </Paper>
 
       {/* 4. Full-width College Table */}
-      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflow: "hidden" }}>
+      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflowX: "auto" }}>
         {paginatedColleges.length === 0 ? (
           <Box sx={{ p: 8, textAlign: "center" }}>
             <School sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />

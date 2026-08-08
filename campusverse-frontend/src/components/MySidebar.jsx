@@ -15,24 +15,13 @@ import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import BoltIcon from "@mui/icons-material/Bolt";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import EventIcon from "@mui/icons-material/Event";
+import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
 
 const NAV_SECTIONS = [
   {
     label: "Main",
     items: [
       { label: "Quick Actions", icon: BoltIcon, path: "/quick-actions", badge: null },
-    ],
-  },
-  {
-    label: "My Profile",
-    items: [
-      { label: "Student Profile", icon: AccountCircleIcon, path: "/profile", badge: null },
-    ],
-  },
-  {
-    label: "Social",
-    items: [
-      { label: "Friend Requests", icon: NotificationsIcon, path: "/notifications", badgeKey: "pending" },
     ],
   },
   {
@@ -157,7 +146,7 @@ export default function MySidebar() {
   return (
     <Box>
       {/* User Profile Card */}
-      <Paper elevation={0} sx={{ textAlign: "center", mb: 3, p: 2.5, bgcolor: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "20px" }}>
+      <Paper elevation={0} sx={{ display: { xs: "none", md: "block" }, textAlign: "center", mb: 3, p: 2.5, bgcolor: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "20px" }}>
         <Avatar src={avatarUrl} sx={{ width: 72, height: 72, mx: "auto", mb: 1.5, boxShadow: "0 4px 10px rgba(0,0,0,0.3)", border: "2px solid rgba(255,255,255,0.08)" }}>
           {user?.firstName?.[0]}
         </Avatar>

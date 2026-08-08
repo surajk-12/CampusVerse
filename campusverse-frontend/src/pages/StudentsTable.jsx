@@ -201,7 +201,7 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
             Campuses / {collegeName || "—"}
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
           <TextField
             placeholder="Search classmates..."
             variant="outlined"
@@ -242,7 +242,7 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
         elevation={3}
         sx={{
           border: "1px solid rgba(255, 255, 255, 0.08)",
-          overflow: "hidden",
+          overflowX: "auto",
           borderRadius: "0px",
         }}
       >

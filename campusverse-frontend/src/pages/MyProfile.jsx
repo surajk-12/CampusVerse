@@ -173,7 +173,7 @@ export default function MyProfile() {
           {/* Stats Bar */}
           <Grid container spacing={3} sx={{ mb: 5 }}>
             {stats.map((s) => (
-              <Grid item xs={12} sm={4} key={s.label}>
+              <Grid size={{ xs: 12, sm: 4 }} key={s.label}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -202,7 +202,7 @@ export default function MyProfile() {
           {/* Information & Documents Grid */}
           <Grid container spacing={5}>
             {/* Left: General Info */}
-            <Grid item xs={12} md={7}>
+            <Grid size={{ xs: 12, md: 7 }}>
               <Typography variant="subtitle1" fontWeight={900} color="text.primary" sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
                 Student Credentials
               </Typography>
@@ -237,7 +237,7 @@ export default function MyProfile() {
             </Grid>
 
             {/* Right: Uploaded ID Card Display */}
-            <Grid item xs={12} md={5}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <Typography variant="subtitle1" fontWeight={900} color="text.primary" sx={{ mb: 3 }}>
                 Verified ID Card
               </Typography>

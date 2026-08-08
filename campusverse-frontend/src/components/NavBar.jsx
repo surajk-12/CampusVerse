@@ -12,6 +12,8 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import SchoolIcon from "@mui/icons-material/School";
+import IconButton from "@mui/material/IconButton";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
@@ -120,6 +122,7 @@ export default function NavBar() {
             textColor="inherit"
             indicatorColor="primary"
             sx={{
+              display: { xs: "none", sm: "flex" },
               height: "100%",
               "& .MuiTabs-indicator": {
                 height: 3,
@@ -148,32 +151,82 @@ export default function NavBar() {
           </Tabs>
 
           {/* Right side Actions */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
             {user ? (
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                onClick={() => {
-                  logout();
-                  nav("/login");
-                }}
-                sx={{
-                  borderRadius: "10px",
-                  fontWeight: 700,
-                  fontSize: "0.85rem",
-                  px: 2.5,
-                  py: 0.8,
-                  borderColor: "rgba(239, 68, 68, 0.4)",
-                  color: "#EF4444",
-                  "&:hover": {
-                    borderColor: "#EF4444",
+              <>
+                {/* On mobile, show a quick 'Dashboard' link instead of center tabs */}
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => nav("/dashboard")}
+                  sx={{
+                    display: { xs: "inline-flex", sm: "none" },
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: "8px",
+                    "&:hover": {
+                      color: "#FFFFFF",
+                      bgcolor: "rgba(255, 255, 255, 0.08)",
+                    },
+                  }}
+                >
+                  Dashboard
+                </Button>
+
+                {/* Logout Button (Desktop) */}
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={() => {
+                    logout();
+                    nav("/login");
+                  }}
+                  sx={{
+                    display: { xs: "none", sm: "inline-flex" },
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    px: 2.5,
+                    py: 0.8,
+                    borderColor: "rgba(239, 68, 68, 0.4)",
+                    color: "#EF4444",
+                    "&:hover": {
+                      borderColor: "#EF4444",
+                      bgcolor: "rgba(239, 68, 68, 0.05)",
+                    },
+                  }}
+                >
+                  Logout
+                </Button>
+
+                {/* Logout Icon Button (Mobile) */}
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    logout();
+                    nav("/login");
+                  }}
+                  sx={{
+                    display: { xs: "inline-flex", sm: "none" },
+                    color: "#EF4444",
                     bgcolor: "rgba(239, 68, 68, 0.05)",
-                  },
-                }}
-              >
-                Logout
-              </Button>
+                    border: "1px solid rgba(239, 68, 68, 0.15)",
+                    borderRadius: "50%",
+                    p: 0.8,
+                    "&:hover": {
+                      borderColor: "#EF4444",
+                      bgcolor: "rgba(239, 68, 68, 0.1)",
+                    },
+                  }}
+                >
+                  <LogoutIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </>
             ) : (
               <Button
                 variant="contained"

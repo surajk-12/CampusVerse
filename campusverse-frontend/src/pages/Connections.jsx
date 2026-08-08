@@ -8,6 +8,7 @@ import { People, Chat as ChatIcon, Search, PersonAdd } from "@mui/icons-material
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios.js";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 export default function Connections() {
   const { user, markConnectionsAsSeen } = useAuth();
@@ -15,6 +16,7 @@ export default function Connections() {
   const [friendsList, setFriendsList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
 
   useEffect(() => {
@@ -38,6 +40,9 @@ export default function Connections() {
   if (!user) return null;
 
   const filtered = friendsList.filter((f) => {
+    const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(f._id);
+    if (!isAiMatched) return false;
+
     const q = search.toLowerCase();
     return (
       (f.firstName + " " + f.lastName).toLowerCase().includes(q) ||
@@ -55,6 +60,13 @@ export default function Connections() {
           All your campus friends and peers in one place.
         </Typography>
       </Box>
+
+      {/* AI Search Assistant */}
+      <AiCopilot
+        type="connections"
+        data={friendsList}
+        onAiFilter={(ids) => setAiFilteredIds(ids)}
+      />
 
       {/* 1. Search Block Header Panel */}
       <Paper
@@ -77,7 +89,7 @@ export default function Connections() {
           <Typography variant="subtitle2" fontWeight="900" color="text.primary">Network ({filtered.length})</Typography>
           <Typography variant="caption" color="text.secondary">{friendsList.length} total connections in your network</Typography>
         </Box>
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "stretch", sm: "center" }} sx={{ width: { xs: "100%", sm: "auto" } }}>
           <TextField
             placeholder="Search connections..."
             size="small"
@@ -142,7 +154,7 @@ export default function Connections() {
           )}
         </Paper>
       ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflow: "hidden" }}>
+        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflowX: "auto" }}>
           <Table>
             <TableHead>
               <TableRow>

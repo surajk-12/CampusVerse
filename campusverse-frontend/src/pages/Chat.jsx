@@ -27,12 +27,14 @@ import {
   VideocamOff,
   CallEnd,
   VolumeUp,
+  ArrowBack,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios.js";
 import { io } from "socket.io-client";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 export default function Chat() {
   const { user } = useAuth();
@@ -55,6 +57,8 @@ export default function Chat() {
   const [inputMessage, setInputMessage] = useState("");
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Typing indicator state
   const [partnerTyping, setPartnerTyping] = useState(false);
@@ -386,10 +390,10 @@ export default function Chat() {
       {/* Left Pane: Friends List */}
       <Box
         sx={{
-          width: { xs: 80, sm: 280 },
+          width: { xs: "100%", sm: 280 },
           borderRight: "1px solid rgba(255, 255, 255, 0.08)",
           bgcolor: "rgba(15, 23, 42, 0.35)",
-          display: "flex",
+          display: { xs: selectedFriend ? "none" : "flex", sm: "flex" },
           flexDirection: "column",
         }}
       >
@@ -401,6 +405,33 @@ export default function Chat() {
             Chat with your verified classmates
           </Typography>
         </Box>
+
+        {/* AI Assistant for Contacts */}
+        <Box sx={{ px: 2, pb: 1, display: { xs: "none", sm: "block" } }}>
+          <AiCopilot
+            type="chat"
+            data={friendsList}
+            onAiFilter={(ids) => setAiFilteredIds(ids)}
+          />
+        </Box>
+
+        <Box sx={{ px: 2, pb: 2, display: { xs: "none", sm: "block" } }}>
+          <TextField
+            placeholder="Search chats..."
+            size="small"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "20px",
+                bgcolor: "rgba(255, 255, 255, 0.02)",
+                fontSize: "0.75rem",
+              },
+            }}
+          />
+        </Box>
+
         <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
 
         <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
@@ -419,7 +450,12 @@ export default function Chat() {
             </Box>
           ) : (
             <Stack spacing={0.5}>
-              {friendsList.map((friend) => {
+              {friendsList.filter(f => {
+                const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(f._id);
+                if (!isAiMatched) return false;
+                if (!searchQuery) return true;
+                return `${f.firstName} ${f.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+              }).map((friend) => {
                 const isSelected = selectedFriend?._id === friend._id;
                 return (
                   <Box
@@ -438,12 +474,20 @@ export default function Chat() {
                       mx: 1,
                       borderRadius: "14px",
                       cursor: "pointer",
-                      bgcolor: isSelected ? "rgba(79, 70, 229, 0.15)" : "transparent",
-                      border: isSelected ? "1px solid rgba(79, 70, 229, 0.25)" : "1px solid transparent",
-                      transition: "all 0.2s",
+                      background: isSelected
+                        ? "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%)"
+                        : "transparent",
+                      borderLeft: isSelected ? "4px solid #8B5CF6" : "4px solid transparent",
+                      borderRight: "1px solid transparent",
+                      borderTop: "1px solid transparent",
+                      borderBottom: "1px solid transparent",
+                      boxShadow: isSelected ? "0 4px 15px rgba(0, 0, 0, 0.15)" : "none",
+                      transition: "all 0.2s ease",
                       "&:hover": {
-                        bgcolor: isSelected ? "rgba(79, 70, 229, 0.15)" : "rgba(255, 255, 255, 0.03)",
-                        borderColor: isSelected ? "rgba(79, 70, 229, 0.25)" : "rgba(255, 255, 255, 0.06)",
+                        background: isSelected
+                          ? "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%)"
+                          : "rgba(255, 255, 255, 0.04)",
+                        transform: "translateX(2px)",
                       },
                       justifyContent: { xs: "center", sm: "flex-start" },
                     }}
@@ -471,21 +515,35 @@ export default function Chat() {
       </Box>
 
       {/* Right Pane: Active Chat Conversation */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", bgcolor: "rgba(15, 23, 42, 0.1)" }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: selectedFriend ? "flex" : "none", sm: "flex" },
+          flexDirection: "column",
+          bgcolor: "rgba(15, 23, 42, 0.1)",
+        }}
+      >
         {selectedFriend ? (
           <>
             {/* Chat header */}
             <Box
               sx={{
-                p: 2,
+                p: 2.2,
                 borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                bgcolor: "rgba(30, 41, 59, 0.4)",
+                bgcolor: "rgba(15, 23, 42, 0.4)",
+                backdropFilter: "blur(20px)",
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
+                <IconButton
+                  onClick={() => setSelectedFriend(null)}
+                  sx={{ display: { xs: "inline-flex", sm: "none" }, color: "text.secondary", p: 0.5 }}
+                >
+                  <ArrowBack />
+                </IconButton>
                 <Avatar
                   src={selectedFriend.photo ? `${apiBase}/uploads/${selectedFriend.photo}` : undefined}
                   sx={{ width: 44, height: 44, bgcolor: "primary.light" }}
@@ -544,11 +602,13 @@ export default function Chat() {
                           sx={{
                             maxWidth: "70%",
                             p: 1.8,
-                            borderRadius: isMe ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
-                            bgcolor: isMe ? "primary.main" : "rgba(255, 255, 255, 0.03)",
+                            borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                            background: isMe 
+                              ? "linear-gradient(135deg, #6366F1 0%, #A855F7 100%)" 
+                              : "rgba(255, 255, 255, 0.05)",
                             color: isMe ? "#ffffff" : "#F1F5F9",
                             boxShadow: isMe 
-                              ? "0 4px 15px rgba(79, 70, 229, 0.25)" 
+                              ? "0 4px 15px rgba(99, 102, 241, 0.2)" 
                               : "none",
                             border: isMe ? "none" : "1px solid rgba(255, 255, 255, 0.06)",
                           }}
@@ -752,7 +812,7 @@ export default function Chat() {
                 display: "flex",
                 gap: 1.5,
                 alignItems: "center",
-                bgcolor: "rgba(30, 41, 59, 0.4)",
+                bgcolor: "rgba(15, 23, 42, 0.35)",
               }}
             >
               {/* Paperclip Attach Button */}
@@ -768,7 +828,7 @@ export default function Chat() {
                 color="primary"
                 onClick={() => fileInputRef.current?.click()}
                 sx={{
-                  p: 1.8,
+                  p: 1.5,
                   bgcolor: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.06)",
                   borderRadius: "14px",
@@ -797,18 +857,26 @@ export default function Chat() {
               
               <IconButton
                 type="submit"
-                color="primary"
                 disabled={(!inputMessage.trim() && selectedFiles.length === 0) || sending}
                 sx={{
-                  p: 1.8,
-                  bgcolor: "primary.main",
-                  color: "#ffffff",
+                  p: 1.5,
+                  background: (!inputMessage.trim() && selectedFiles.length === 0) || sending
+                    ? "rgba(255,255,255,0.03)"
+                    : "linear-gradient(135deg, #6366F1 0%, #A855F7 100%)",
+                  color: (!inputMessage.trim() && selectedFiles.length === 0) || sending
+                    ? "rgba(255,255,255,0.2)"
+                    : "#ffffff",
                   borderRadius: "14px",
+                  boxShadow: (!inputMessage.trim() && selectedFiles.length === 0) || sending
+                    ? "none"
+                    : "0 4px 10px rgba(139, 92, 246, 0.2)",
                   "&:hover": {
-                    bgcolor: "primary.dark",
+                    background: "linear-gradient(135deg, #4F46E5 0%, #9333EA 100%)",
+                    transform: "scale(1.02)",
+                    boxShadow: "0 6px 15px rgba(139, 92, 246, 0.3)",
                   },
                   "&.Mui-disabled": {
-                    bgcolor: "rgba(255,255,255,0.02)",
+                    background: "rgba(255,255,255,0.02)",
                     color: "rgba(255,255,255,0.2)",
                   }
                 }}

@@ -29,10 +29,12 @@ import {
   LocalOffer,
   CalendarMonth,
   Person,
+  SmartToy,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../api/axios.js";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 const DEPARTMENTS = [
   "All",
@@ -64,6 +66,7 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedYear, setSelectedYear] = useState("All");
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Upload Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -96,8 +99,16 @@ export default function NotesPage() {
   };
 
   useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const aiSearchVal = queryParams.get("aiSearch");
+    if (aiSearchVal) {
+      setSearchQuery(aiSearchVal);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchResources();
-  }, [selectedDept, selectedYear]);
+  }, [selectedDept, selectedYear, searchQuery]);
 
   // File Picker Change
   const handleFileChange = (e) => {
@@ -187,6 +198,10 @@ export default function NotesPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
 
+  const resourcesToDisplay = aiFilteredIds
+    ? resources.filter((res) => aiFilteredIds.includes(res._id))
+    : resources;
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
       {/* Header section */}
@@ -219,6 +234,13 @@ export default function NotesPage() {
           Upload Notes
         </Button>
       </Stack>
+
+      {/* AI Copilot Search Bar */}
+      <AiCopilot
+        type="notes"
+        data={resources}
+        onAiFilter={(ids) => setAiFilteredIds(ids)}
+      />
 
       {/* Filter toolbar */}
       <Paper
@@ -346,9 +368,28 @@ export default function NotesPage() {
             Be the first to upload and share study assets with classmates!
           </Typography>
         </Paper>
+      ) : resourcesToDisplay.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(30, 41, 59, 0.15)",
+            borderRadius: "16px",
+          }}
+        >
+          <SmartToy sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
+          <Typography variant="body1" fontWeight={750} color="text.secondary">
+            No notes found matching the AI filters.
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+            Try adjusting your natural language query or clearing the AI filter.
+          </Typography>
+        </Paper>
       ) : (
         <Grid container spacing={3}>
-          {resources.map((res) => {
+          {resourcesToDisplay.map((res) => {
             const uploaderName = res.uploadedBy
               ? `${res.uploadedBy.firstName} ${res.uploadedBy.lastName}`
               : "Uploader";
@@ -357,7 +398,7 @@ export default function NotesPage() {
               : undefined;
 
             return (
-              <Grid item xs={12} sm={6} md={4} key={res._id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={res._id}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -495,9 +536,11 @@ export default function NotesPage() {
             bgcolor: "#0F172A",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             borderRadius: "0px",
-            p: 4,
+            p: { xs: 2.5, sm: 4 },
             boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
             outline: "none",
+            maxHeight: "90vh",
+            overflowY: "auto",
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>

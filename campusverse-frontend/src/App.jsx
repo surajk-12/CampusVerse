@@ -22,6 +22,7 @@ import Feed from "./pages/Feed.jsx";
 import EventsPage from "./pages/EventsPage.jsx";
 import NotesPage from "./pages/NotesPage.jsx";
 import MarketplacePage from "./pages/MarketplacePage.jsx";
+import QueriesPage from "./pages/QueriesPage.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 export default function App() {
@@ -163,6 +164,16 @@ export default function App() {
                 <ProtectedRoute>
                   <AuthenticatedLayout sidebarContent={<MySidebar />}>
                     <MarketplacePage />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/queries"
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <QueriesPage />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               }

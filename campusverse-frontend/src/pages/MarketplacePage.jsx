@@ -39,11 +39,13 @@ import {
   CheckCircleOutline,
   PhotoCamera,
   AttachMoney,
+  SmartToy,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../api/axios.js";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
+import AiCopilot from "../components/AiCopilot.jsx";
 
 const CATEGORIES = [
   "All",
@@ -73,6 +75,7 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
   const [locationsList, setLocationsList] = useState(["All"]);
+  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Post Listing Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -171,6 +174,11 @@ export default function MarketplacePage() {
   };
 
   useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const aiSearchVal = queryParams.get("aiSearch");
+    if (aiSearchVal) {
+      setSearchQuery(aiSearchVal);
+    }
     fetchItems(true);
   }, []);
 
@@ -343,7 +351,9 @@ export default function MarketplacePage() {
     }
   };
 
-
+  const itemsToDisplay = aiFilteredIds
+    ? items.filter((item) => aiFilteredIds.includes(item._id))
+    : items;
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
@@ -377,6 +387,13 @@ export default function MarketplacePage() {
           Post an Item
         </Button>
       </Stack>
+
+      {/* AI Copilot Search Bar */}
+      <AiCopilot
+        type="market"
+        data={items}
+        onAiFilter={(ids) => setAiFilteredIds(ids)}
+      />
 
       {/* Filters header panel */}
       <Paper
@@ -504,9 +521,28 @@ export default function MarketplacePage() {
             Got items you don't need? Sell them to juniors and peers here!
           </Typography>
         </Paper>
+      ) : itemsToDisplay.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(30, 41, 59, 0.15)",
+            borderRadius: "16px",
+          }}
+        >
+          <SmartToy sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
+          <Typography variant="body1" fontWeight={750} color="text.secondary">
+            No items found matching the AI filters.
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+            Try adjusting your natural language query or clearing the AI filter.
+          </Typography>
+        </Paper>
       ) : (
         <Grid container spacing={3}>
-          {items.map((item) => {
+          {itemsToDisplay.map((item) => {
             const activeIdx = imageIndexes[item._id] || 0;
             const imagesList = item.images || [];
             const activeImg = imagesList[activeIdx] ? `${apiBase}${imagesList[activeIdx]}` : "/placeholder.png";
