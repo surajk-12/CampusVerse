@@ -15,6 +15,7 @@ const postSchema = new mongoose.Schema(
         url: { type: String, required: true },
       },
     ],
+    reports: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Users who reported this post
   },
   { timestamps: true }
 );

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AISearchInput from "../components/AISearchInput.jsx";
 import {
   Box,
   Typography,
@@ -45,7 +46,6 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../api/axios.js";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
-import AiCopilot from "../components/AiCopilot.jsx";
 
 const CATEGORIES = [
   "All",
@@ -75,7 +75,6 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
   const [locationsList, setLocationsList] = useState(["All"]);
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Post Listing Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -180,6 +179,16 @@ export default function MarketplacePage() {
       setSearchQuery(aiSearchVal);
     }
     fetchItems(true);
+  }, []);
+
+  useEffect(() => {
+    const handleAIFilter = (e) => {
+      if (e.detail?.searchString) {
+        setSearchQuery(e.detail.searchString);
+      }
+    };
+    window.addEventListener("ai-filter", handleAIFilter);
+    return () => window.removeEventListener("ai-filter", handleAIFilter);
   }, []);
 
   useEffect(() => {
@@ -351,9 +360,7 @@ export default function MarketplacePage() {
     }
   };
 
-  const itemsToDisplay = aiFilteredIds
-    ? items.filter((item) => aiFilteredIds.includes(item._id))
-    : items;
+
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
@@ -388,12 +395,7 @@ export default function MarketplacePage() {
         </Button>
       </Stack>
 
-      {/* AI Copilot Search Bar */}
-      <AiCopilot
-        type="market"
-        data={items}
-        onAiFilter={(ids) => setAiFilteredIds(ids)}
-      />
+
 
       {/* Filters header panel */}
       <Paper
@@ -413,27 +415,23 @@ export default function MarketplacePage() {
         }}
       >
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ flexGrow: 1 }}>
-          <TextField
-            placeholder="Search items for sale..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            sx={{
-              minWidth: { sm: 260 },
-              "& .MuiOutlinedInput-root": {
-                background: "rgba(255, 255, 255, 0.02)",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.06)",
-                "& fieldset": { border: "none" },
-              },
+          <AISearchInput
+            placeholder="Ask AI or search items..."
+            context="marketplace"
+            onFilterApply={(res) => {
+              setSearchQuery(res.search || "");
+              if (res.category) {
+                // Ensure exact match check in CATEGORIES list
+                const exists = CATEGORIES.some(c => c.toLowerCase() === res.category.toLowerCase());
+                if (exists) {
+                  setSelectedCategory(CATEGORIES.find(c => c.toLowerCase() === res.category.toLowerCase()));
+                }
+              }
+              if (res.location && res.location !== "All") {
+                setSelectedLocation(res.location);
+              }
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: "text.secondary", fontSize: 18 }} />
-                </InputAdornment>
-              ),
-            }}
+            sx={{ minWidth: { sm: 260 } }}
           />
 
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -521,28 +519,9 @@ export default function MarketplacePage() {
             Got items you don't need? Sell them to juniors and peers here!
           </Typography>
         </Paper>
-      ) : itemsToDisplay.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: "center",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(30, 41, 59, 0.15)",
-            borderRadius: "16px",
-          }}
-        >
-          <SmartToy sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
-          <Typography variant="body1" fontWeight={750} color="text.secondary">
-            No items found matching the AI filters.
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-            Try adjusting your natural language query or clearing the AI filter.
-          </Typography>
-        </Paper>
       ) : (
         <Grid container spacing={3}>
-          {itemsToDisplay.map((item) => {
+          {items.map((item) => {
             const activeIdx = imageIndexes[item._id] || 0;
             const imagesList = item.images || [];
             const activeImg = imagesList[activeIdx] ? `${apiBase}${imagesList[activeIdx]}` : "/placeholder.png";

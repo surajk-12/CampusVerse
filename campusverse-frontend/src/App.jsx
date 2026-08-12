@@ -7,7 +7,6 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import NavBar from "./components/NavBar.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
-import Footer from "./components/Footer.jsx";
 import AuthenticatedLayout from "./components/AuthenticatedLayout";
 import MySidebar from "./components/MySidebar.jsx";
 import CollegeDetails from "./pages/CollegeDetails.jsx";
@@ -46,6 +45,16 @@ export default function App() {
             {/* Registration flow */}
             <Route path="/register" element={<CollegeRegister />} />
             <Route path="/register/student" element={<Register />} />
+            <Route
+              path="/college-register"
+              element={
+                <ProtectedRoute roles={["super_admin"]}>
+                  <AuthenticatedLayout sidebarContent={<MySidebar />}>
+                    <CollegeRegister />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected routes with sidebar */}
             <Route
@@ -195,7 +204,6 @@ export default function App() {
             <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
           </Routes>
         </Box>
-        {!user && <Footer />}
       </Box>
     </>
   );

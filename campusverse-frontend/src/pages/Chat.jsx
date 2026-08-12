@@ -34,7 +34,6 @@ import { useToast } from "../context/ToastContext.jsx";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios.js";
 import { io } from "socket.io-client";
-import AiCopilot from "../components/AiCopilot.jsx";
 
 export default function Chat() {
   const { user } = useAuth();
@@ -58,7 +57,6 @@ export default function Chat() {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Typing indicator state
   const [partnerTyping, setPartnerTyping] = useState(false);
@@ -406,15 +404,6 @@ export default function Chat() {
           </Typography>
         </Box>
 
-        {/* AI Assistant for Contacts */}
-        <Box sx={{ px: 2, pb: 1, display: { xs: "none", sm: "block" } }}>
-          <AiCopilot
-            type="chat"
-            data={friendsList}
-            onAiFilter={(ids) => setAiFilteredIds(ids)}
-          />
-        </Box>
-
         <Box sx={{ px: 2, pb: 2, display: { xs: "none", sm: "block" } }}>
           <TextField
             placeholder="Search chats..."
@@ -451,8 +440,6 @@ export default function Chat() {
           ) : (
             <Stack spacing={0.5}>
               {friendsList.filter(f => {
-                const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(f._id);
-                if (!isAiMatched) return false;
                 if (!searchQuery) return true;
                 return `${f.firstName} ${f.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
               }).map((friend) => {

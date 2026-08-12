@@ -191,11 +191,11 @@ export default function Login() {
         <Typography mt={4} variant="body2" textAlign="center" sx={{ color: "rgba(255, 255, 255, 0.5)" }}>
           New to CampusVerse?{" "}
           <Link
-            to="/register"
+            to="/register/student"
             style={{
               textDecoration: "none",
               color: "#818CF8",
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
             Get started

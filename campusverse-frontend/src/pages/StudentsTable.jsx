@@ -17,16 +17,46 @@ import {
   Avatar,
   InputAdornment,
   Stack,
+  Tooltip,
 } from "@mui/material";
-import { Send, CheckCircle, ArrowBack, Search, Verified } from "@mui/icons-material";
+import { Send, CheckCircle, ArrowBack, Search, Verified, Delete } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
+import useRole from "../hooks/useRole.js";
 
 export default function StudentsTable({ collegeId: propCollegeId, collegeName: propCollegeName }) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isSuperAdmin, isCollegeAdmin, canAdminister, sameCollege } = useRole();
+
+  // Toggle student verification
+  const handleToggleVerify = async (studentId) => {
+    try {
+      const { data } = await api.put(`/users/${studentId}/verify`);
+      showToast(data.message, "success");
+      setStudents((prev) =>
+        prev.map((s) => (s._id === studentId ? { ...s, isVerified: data.isVerified } : s))
+      );
+    } catch (err) {
+      console.error("Failed to verify student:", err);
+      showToast(err.response?.data?.message || "Failed to toggle verification.", "error");
+    }
+  };
+
+  // Remove student
+  const handleRemoveStudent = async (studentId) => {
+    if (!window.confirm("Are you sure you want to delete/remove this student? This action is permanent!")) return;
+    try {
+      await api.delete(`/users/${studentId}`);
+      showToast("Student account deleted successfully.", "success");
+      setStudents((prev) => prev.filter((s) => s._id !== studentId));
+    } catch (err) {
+      console.error("Failed to remove student:", err);
+      showToast(err.response?.data?.message || "Failed to remove student.", "error");
+    }
+  };
   const { collegeId: paramCollegeId } = useParams();
   const collegeId = propCollegeId || paramCollegeId;
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
@@ -343,6 +373,11 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
                     <TableCell sx={{ fontWeight: 700, color: isFriend ? "#34D399" : "text.primary" }}>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <span>{student.firstName} {student.lastName} {isMe && "(You)"}</span>
+                        {student.isVerified && (
+                          <Tooltip title="Verified Student">
+                            <Verified sx={{ fontSize: 16, color: "#10B981" }} />
+                          </Tooltip>
+                        )}
                         {isFriend && (
                           <Chip
                             icon={<Verified sx={{ fontSize: "14px !important", color: "#10B981 !important" }} />}
@@ -368,37 +403,75 @@ export default function StudentsTable({ collegeId: propCollegeId, collegeName: p
                       {student.passingYear || "—"}
                     </TableCell>
                     <TableCell sx={{ pr: 3, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                      {isMe ? (
-                        <Chip label="Me" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                      ) : isFriend ? (
-                        <Chip
-                          icon={<CheckCircle sx={{ fontSize: "16px !important" }} />}
-                          label="Connected"
-                          size="small"
-                          sx={{
-                            bgcolor: "rgba(16,185,129,0.1)",
-                            color: "#10B981",
-                            border: "1px solid rgba(16,185,129,0.3)",
-                            fontWeight: 700,
-                            boxShadow: "0 0 8px rgba(16,185,129,0.15)",
-                          }}
-                        />
-                      ) : status === "sent" ? (
-                        <Chip icon={<CheckCircle />} label="Request Sent" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
-                      ) : status === "accepted" ? (
-                        <Chip icon={<CheckCircle />} label="Connected" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
-                      ) : (
-                        <IconButton
-                          color="primary"
-                          onClick={() => handleSendRequest(student._id)}
-                          sx={{
-                            bgcolor: "rgba(79, 70, 229, 0.06)",
-                            "&:hover": { bgcolor: "rgba(79, 70, 229, 0.15)" },
-                          }}
-                        >
-                          <Send sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      )}
+                      <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="center">
+                        {isMe ? (
+                          <Chip label="Me" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        ) : isFriend ? (
+                          <Chip
+                            icon={<CheckCircle sx={{ fontSize: "16px !important" }} />}
+                            label="Connected"
+                            size="small"
+                            sx={{
+                              bgcolor: "rgba(16,185,129,0.1)",
+                              color: "#10B981",
+                              border: "1px solid rgba(16,185,129,0.3)",
+                              fontWeight: 700,
+                              boxShadow: "0 0 8px rgba(16,185,129,0.15)",
+                            }}
+                          />
+                        ) : status === "sent" ? (
+                          <Chip icon={<CheckCircle />} label="Request Sent" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
+                        ) : status === "accepted" ? (
+                          <Chip icon={<CheckCircle />} label="Connected" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+                        ) : (
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleSendRequest(student._id)}
+                            sx={{
+                              bgcolor: "rgba(79, 70, 229, 0.06)",
+                              "&:hover": { bgcolor: "rgba(79, 70, 229, 0.15)" },
+                            }}
+                          >
+                            <Send sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        )}
+
+                        {/* Admin Action: Verify Student */}
+                        {!isMe && (isSuperAdmin || (isCollegeAdmin && sameCollege(collegeId))) && (
+                          <Tooltip title={student.isVerified ? "Unverify Student" : "Verify Student"}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleToggleVerify(student._id)}
+                              sx={{
+                                color: student.isVerified ? "#10B981" : "text.secondary",
+                                bgcolor: student.isVerified ? "rgba(16, 185, 129, 0.08)" : "rgba(255, 255, 255, 0.03)",
+                                border: "1px solid rgba(255, 255, 255, 0.06)",
+                                "&:hover": { bgcolor: "rgba(16, 185, 129, 0.15)" },
+                              }}
+                            >
+                              <Verified sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+
+                        {/* Admin Action: Delete Student Account */}
+                        {!isMe && (isSuperAdmin || (isCollegeAdmin && sameCollege(collegeId))) && (
+                          <Tooltip title="Delete Student Account">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveStudent(student._id)}
+                              sx={{
+                                color: "error.main",
+                                bgcolor: "rgba(244, 63, 94, 0.05)",
+                                border: "1px solid rgba(244, 63, 94, 0.15)",
+                                "&:hover": { bgcolor: "rgba(244, 63, 94, 0.15)" },
+                              }}
+                            >
+                              <Delete sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 );

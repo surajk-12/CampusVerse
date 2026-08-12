@@ -3,6 +3,9 @@ import { Box, Typography, Divider, Avatar, Stack, CircularProgress, Badge, Paper
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/axios.js";
 import { useNavigate, useLocation } from "react-router-dom";
+import useRole from "../hooks/useRole.js";
+
+const NAV_SECTIONS = []; // Deprecated, using dynamic sections instead
 
 // Icons
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -17,23 +20,10 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import EventIcon from "@mui/icons-material/Event";
 import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
 
-const NAV_SECTIONS = [
-  {
-    label: "Main",
-    items: [
-      { label: "Quick Actions", icon: BoltIcon, path: "/quick-actions", badge: null },
-    ],
-  },
-  {
-    label: "Campus",
-    items: [
-      { label: "My College", icon: SchoolIcon, path: "my-college", badge: null },
-      { label: "Browse Students", icon: PersonSearchIcon, path: "browse-students", badge: null },
-    ],
-  },
-];
+
 
 export default function MySidebar() {
+  const { isSuperAdmin } = useRole();
   const {
     user,
     notifications,
@@ -51,6 +41,30 @@ export default function MySidebar() {
 
   const [collegeDetails, setCollegeDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const sections = [
+    {
+      label: "Main",
+      items: [
+        { label: "Quick Actions", icon: BoltIcon, path: "/quick-actions", badge: null },
+      ],
+    },
+    {
+      label: "Campus",
+      items: [
+        ...(user?.college ? [{ label: "My College", icon: SchoolIcon, path: "my-college", badge: null }] : []),
+        { label: "Browse Students", icon: PersonSearchIcon, path: "browse-students", badge: null },
+      ],
+    },
+    ...(isSuperAdmin ? [
+      {
+        label: "Admin",
+        items: [
+          { label: "Register College", icon: SchoolIcon, path: "/college-register", badge: null },
+        ],
+      }
+    ] : []),
+  ];
 
   useEffect(() => {
     if (!user?.college) return;
@@ -109,6 +123,7 @@ export default function MySidebar() {
 
   const handleNav = (path) => {
     if (path === "my-college") {
+      if (!user?.college) return; // super_admin has no college
       navigate(`/colleges/${user.college}/students`, { state: { collegeId: user.college, collegeName: collegeDetails?.collegeName } });
     } else if (path === "browse-students") {
       navigate("/dashboard");
@@ -171,7 +186,7 @@ export default function MySidebar() {
 
       {/* Navigation Sections */}
       <Stack spacing={2.5}>
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <Box key={section.label}>
             <Typography variant="caption" fontWeight={800} color="text.disabled" sx={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.62rem", px: 1, display: "block", mb: 0.8 }}>
               {section.label}

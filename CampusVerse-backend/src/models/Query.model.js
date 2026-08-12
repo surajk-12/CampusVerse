@@ -11,6 +11,8 @@ const querySchema = new mongoose.Schema(
     downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     answersCount: { type: Number, default: 0 },
     acceptedAnswer: { type: mongoose.Schema.Types.ObjectId, ref: "Answer" },
+    isPinned: { type: Boolean, default: false },                          // Moderator/Admin can pin
+    reports: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],    // Users who reported this
   },
   { timestamps: true }
 );

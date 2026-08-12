@@ -14,8 +14,8 @@ import feedRoutes from "./routes/feed.routes.js";
 import eventRoutes from "./routes/event.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import itemRoutes from "./routes/item.routes.js";
-import aiRoutes from "./routes/ai.routes.js";
 import queryRoutes from "./routes/query.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import { initSocket } from "./socket.js";
 
 // Load environment variables
@@ -44,8 +44,8 @@ app.use("/api/feed", feedRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/items", itemRoutes);
-app.use("/api/ai", aiRoutes);
 app.use("/api/queries", queryRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Wrap express in an HTTP server so Socket.io can share the same port
 const httpServer = createServer(app);

@@ -1,7 +1,7 @@
 import express from "express";
 import Post from "../models/Post.model.js";
 import Comment from "../models/Comment.model.js";
-import { protect } from "../middlewares/authMiddleware.js";
+import { protect, requireRole } from "../middlewares/authMiddleware.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -281,6 +281,29 @@ router.delete("/comments/:commentId", protect, async (req, res) => {
     res.status(200).json({ message: "Comment deleted successfully" });
   } catch (err) {
     console.error("Error deleting comment:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   POST /api/feed/:id/report
+// @desc    Report a post — any authenticated user
+// @access  Private
+router.post("/:id/report", protect, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (post.reports?.includes(req.user._id)) {
+      return res.status(400).json({ message: "You have already reported this post." });
+    }
+
+    if (!post.reports) post.reports = [];
+    post.reports.push(req.user._id);
+    await post.save();
+
+    res.status(200).json({ message: "Post reported. Our moderation team will review it." });
+  } catch (err) {
+    console.error("Error reporting post:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import Resource from "../models/Resource.model.js";
 import documentUpload from "../middlewares/documentUpload.js";
-import { protect } from "../middlewares/authMiddleware.js"; // assumes JWT authentication helper exists
+import { protect, requireRole } from "../middlewares/authMiddleware.js";
 import asyncHandler from "express-async-handler";
 
 const router = express.Router();
@@ -195,6 +195,47 @@ router.get(
         }
       }
     });
+  })
+);
+
+// @route   PUT /api/resources/:id/verify
+// @desc    Mark a resource as verified — admin/moderator only
+// @access  Private
+router.put(
+  "/:id/verify",
+  protect,
+  requireRole(["super_admin", "college_admin", "moderator"]),
+  asyncHandler(async (req, res) => {
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      res.status(404);
+      throw new Error("Resource not found.");
+    }
+    resource.isVerified = !resource.isVerified;
+    await resource.save();
+    res.status(200).json({ isVerified: resource.isVerified, message: resource.isVerified ? "Resource verified." : "Verification removed." });
+  })
+);
+
+// @route   POST /api/resources/:id/report
+// @desc    Report a resource — any authenticated user
+// @access  Private
+router.post(
+  "/:id/report",
+  protect,
+  asyncHandler(async (req, res) => {
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      res.status(404);
+      throw new Error("Resource not found.");
+    }
+    if (resource.reports?.includes(req.user._id)) {
+      return res.status(400).json({ message: "You have already reported this resource." });
+    }
+    if (!resource.reports) resource.reports = [];
+    resource.reports.push(req.user._id);
+    await resource.save();
+    res.status(200).json({ message: "Resource reported. Our team will review it." });
   })
 );
 

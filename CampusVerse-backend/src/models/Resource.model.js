@@ -53,6 +53,12 @@ const resourceSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "Uploader is required"],
     },
+    college: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+    },
+    isVerified: { type: Boolean, default: false }, // Verified by admin/moderator
+    reports: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Reported by users
   },
   {
     timestamps: true,

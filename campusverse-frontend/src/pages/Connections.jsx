@@ -8,7 +8,7 @@ import { People, Chat as ChatIcon, Search, PersonAdd } from "@mui/icons-material
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
+import AISearchInput from "../components/AISearchInput.jsx";
 
 export default function Connections() {
   const { user, markConnectionsAsSeen } = useAuth();
@@ -16,7 +16,6 @@ export default function Connections() {
   const [friendsList, setFriendsList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
 
   useEffect(() => {
@@ -37,12 +36,19 @@ export default function Connections() {
     }
   }, [friendsList, markConnectionsAsSeen]);
 
+  useEffect(() => {
+    const handleAIFilter = (e) => {
+      if (e.detail?.searchString) {
+        setSearch(e.detail.searchString);
+      }
+    };
+    window.addEventListener("ai-filter", handleAIFilter);
+    return () => window.removeEventListener("ai-filter", handleAIFilter);
+  }, []);
+
   if (!user) return null;
 
   const filtered = friendsList.filter((f) => {
-    const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(f._id);
-    if (!isAiMatched) return false;
-
     const q = search.toLowerCase();
     return (
       (f.firstName + " " + f.lastName).toLowerCase().includes(q) ||
@@ -61,12 +67,7 @@ export default function Connections() {
         </Typography>
       </Box>
 
-      {/* AI Search Assistant */}
-      <AiCopilot
-        type="connections"
-        data={friendsList}
-        onAiFilter={(ids) => setAiFilteredIds(ids)}
-      />
+
 
       {/* 1. Search Block Header Panel */}
       <Paper
@@ -90,40 +91,37 @@ export default function Connections() {
           <Typography variant="caption" color="text.secondary">{friendsList.length} total connections in your network</Typography>
         </Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "stretch", sm: "center" }} sx={{ width: { xs: "100%", sm: "auto" } }}>
-          <TextField
-            placeholder="Search connections..."
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{
-              minWidth: 200,
-              "& .MuiOutlinedInput-root": {
-                background: "rgba(255, 255, 255, 0.02)",
-                borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                "& fieldset": { border: "none" },
-              },
+          <AISearchInput
+            placeholder="Ask AI or search connections..."
+            context="connections"
+            onFilterApply={(res) => {
+              setSearch(res.search || "");
             }}
-            InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: "text.secondary" }} /></InputAdornment> }}
+            sx={{ minWidth: 220 }}
           />
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PersonAdd sx={{ fontSize: 12 }} />}
-            onClick={() => nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })}
-            sx={{
-              borderRadius: "8px",
-              height: 28,
-              fontWeight: 700,
-              fontSize: "0.72rem",
-              px: 2,
-              borderColor: "rgba(255, 255, 255, 0.12)",
-              textTransform: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Find Peers
-          </Button>
+          <Tooltip title={!user.college ? "No college linked to your account" : ""} placement="top">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={!user.college}
+                startIcon={<PersonAdd sx={{ fontSize: 12 }} />}
+                onClick={() => user.college && nav(`/colleges/${user.college}/students`, { state: { collegeId: user.college } })}
+                sx={{
+                  borderRadius: "8px",
+                  height: 28,
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                  px: 2,
+                  borderColor: "rgba(255, 255, 255, 0.12)",
+                  textTransform: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Find Peers
+              </Button>
+            </span>
+          </Tooltip>
         </Stack>
       </Paper>
 
@@ -142,7 +140,7 @@ export default function Connections() {
           <Typography variant="body2" color="text.secondary" mb={3}>
             {search ? "Try a different search term." : "Browse the campus directory to connect with peers."}
           </Typography>
-          {!search && (
+          {!search && user.college && (
             <Button
               variant="contained"
               size="small"
@@ -151,6 +149,11 @@ export default function Connections() {
             >
               Browse Campus Directory
             </Button>
+          )}
+          {!search && !user.college && (
+            <Typography variant="caption" color="text.disabled" sx={{ mt: 1, display: "block" }}>
+              No campus linked — super admins don't have a home campus.
+            </Typography>
           )}
         </Paper>
       ) : (

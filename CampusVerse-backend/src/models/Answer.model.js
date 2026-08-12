@@ -9,6 +9,7 @@ const answerSchema = new mongoose.Schema(
     upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "QueryComment" }],
+    reports: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Users who reported this answer
   },
   { timestamps: true }
 );

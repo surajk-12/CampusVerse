@@ -30,7 +30,7 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import GlobalAiCopilot from "./GlobalAiCopilot.jsx";
+import AIAssistantWidget from "./AIAssistantWidget.jsx";
 
 export default function AuthenticatedLayout({ sidebarContent, children }) {
   const { user, logout, notifications, seenNotificationsCount } = useAuth();
@@ -381,9 +381,7 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
           </Box>
         </Box>
       </Drawer>
-      
-      {/* Global AI Assistant Floating Action Component */}
-      <GlobalAiCopilot />
+      <AIAssistantWidget />
     </Box>
   );
 }

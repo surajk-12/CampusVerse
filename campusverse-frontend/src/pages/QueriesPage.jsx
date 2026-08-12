@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import AISearchInput from "../components/AISearchInput.jsx";
 import {
   Box,
   Typography,
@@ -17,6 +18,8 @@ import {
   Switch,
   Tooltip,
   InputAdornment,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   HelpOutline,
@@ -35,11 +38,17 @@ import {
   School,
   AccessTime,
   Person,
+  Send,
+  ArrowUpward,
+  ArrowDownward,
+  PushPin,
+  Delete,
+  Flag,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
+import useRole from "../hooks/useRole.js";
 
 const PRESET_TAGS = ["All", "exams", "placements", "tech", "hostellife", "academics", "sports", "general"];
 
@@ -64,6 +73,7 @@ const formatRelativeTime = (dateStr) => {
 export default function QueriesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isSuperAdmin, isCollegeAdmin, isModerator, canModerate, sameCollege } = useRole();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
 
   const [queries, setQueries] = useState([]);
@@ -76,13 +86,12 @@ export default function QueriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("All");
   const [myCollegeOnly, setMyCollegeOnly] = useState(false);
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Ask Question Modal State
   const [askModalOpen, setAskModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newTags, setNewTags] = useState("");
+  const [newTags, setNewTags] = useState("general");
   const [submittingQuery, setSubmittingQuery] = useState(false);
 
   // Detail View State (Single Query Detail)
@@ -123,6 +132,17 @@ export default function QueriesPage() {
   useEffect(() => {
     fetchQueries(1);
   }, [selectedTag, myCollegeOnly, searchQuery]);
+
+  useEffect(() => {
+    const handleAIFilter = (e) => {
+      if (e.detail?.searchString) {
+        setSearchQuery(e.detail.searchString);
+        setCurrentPage(1);
+      }
+    };
+    window.addEventListener("ai-filter", handleAIFilter);
+    return () => window.removeEventListener("ai-filter", handleAIFilter);
+  }, []);
 
   // Fetch single query detail
   const fetchQueryDetail = async (queryId) => {
@@ -185,10 +205,7 @@ export default function QueriesPage() {
 
     setSubmittingQuery(true);
     try {
-      const tagsArray = newTags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
+      const tagsArray = [newTags].filter(Boolean);
 
       const { data } = await api.post("/queries", {
         title: newTitle,
@@ -200,7 +217,7 @@ export default function QueriesPage() {
       showToast("Question posted successfully!", "success");
       setNewTitle("");
       setNewDescription("");
-      setNewTags("");
+      setNewTags("general");
       setAskModalOpen(false);
     } catch (err) {
       console.error("Error posting query:", err);
@@ -274,157 +291,420 @@ export default function QueriesPage() {
     }
   };
 
-  const queriesToDisplay = aiFilteredIds
-    ? queries.filter((q) => aiFilteredIds.includes(q._id))
-    : queries;
+  // Delete Question
+  const handleDeleteQuery = async (queryId) => {
+    if (!window.confirm("Are you sure you want to delete this question? This cannot be undone.")) return;
+    try {
+      await api.delete(`/queries/${queryId}`);
+      showToast("Question deleted successfully.", "success");
+      setQueries((prev) => prev.filter((q) => q._id !== queryId));
+      if (detailQuery?._id === queryId) {
+        setDetailQuery(null);
+      }
+    } catch (err) {
+      console.error("Error deleting query:", err);
+      showToast(err.response?.data?.message || "Failed to delete question.", "error");
+    }
+  };
+
+  // Delete Answer
+  const handleDeleteAnswer = async (answerId) => {
+    if (!window.confirm("Are you sure you want to delete this answer? This cannot be undone.")) return;
+    try {
+      await api.delete(`/queries/answers/${answerId}`);
+      showToast("Answer deleted successfully.", "success");
+      setDetailAnswers((prev) => prev.filter((ans) => ans._id !== answerId));
+    } catch (err) {
+      console.error("Error deleting answer:", err);
+      showToast(err.response?.data?.message || "Failed to delete answer.", "error");
+    }
+  };
+
+  // Toggle Pin Query
+  const handlePinQuery = async (queryId) => {
+    try {
+      const { data } = await api.put(`/queries/${queryId}/pin`);
+      showToast(data.message, "success");
+      
+      // Update in queries list
+      setQueries((prev) =>
+        prev.map((q) => (q._id === queryId ? { ...q, isPinned: data.isPinned } : q))
+      );
+
+      // Update in detail view
+      if (detailQuery && detailQuery._id === queryId) {
+        setDetailQuery((prev) => ({ ...prev, isPinned: data.isPinned }));
+      }
+    } catch (err) {
+      console.error("Error pinning query:", err);
+      showToast(err.response?.data?.message || "Failed to pin question.", "error");
+    }
+  };
+
+  // Report Query
+  const handleReportQuery = async (queryId) => {
+    try {
+      await api.post(`/queries/${queryId}/report`);
+      showToast("Question reported for moderation review.", "success");
+    } catch (err) {
+      console.error("Error reporting query:", err);
+      showToast(err.response?.data?.message || "You have already reported this question.", "info");
+    }
+  };
+
+  // Report Answer
+  const handleReportAnswer = async (answerId) => {
+    try {
+      await api.post(`/queries/answers/${answerId}/report`);
+      showToast("Answer reported for moderation review.", "success");
+    } catch (err) {
+      console.error("Error reporting answer:", err);
+      showToast(err.response?.data?.message || "You have already reported this answer.", "info");
+    }
+  };
+
+  // --- Detail view answer filter state ---
+  const [answerFilter, setAnswerFilter] = useState("all");
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase() || "?";
+  };
+
+  // Unique participants list from answers
+  const participants = detailQuery
+    ? [
+        detailQuery.author,
+        ...(detailAnswers || []).map((a) => a.author),
+      ].filter(
+        (p, idx, self) =>
+          p && self.findIndex((x) => x?._id === p?._id) === idx
+      )
+    : [];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
+    <Box sx={{ p: { xs: 2, md: 4 } }}>
       {detailQuery ? (
         /* ================== DETAIL VIEW ================== */
         <Box>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setDetailQuery(null)}
-            sx={{ mb: 4, textTransform: "none", fontWeight: 700 }}
+          {/* Sub-header bar */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 2,
+              mb: 4,
+              pb: 2,
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}
           >
-            Back to Discussions
-          </Button>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                startIcon={<ArrowBack sx={{ fontSize: 14 }} />}
+                onClick={() => setDetailQuery(null)}
+                size="small"
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.78rem",
+                  color: "text.secondary",
+                  bgcolor: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "8px",
+                  px: 2,
+                  "&:hover": { color: "text.primary", bgcolor: "rgba(255,255,255,0.06)" },
+                }}
+              >
+                Back to Discussions
+              </Button>
+              <Typography variant="caption" color="text.disabled" sx={{ display: { xs: "none", sm: "block" } }}>
+                |
+              </Typography>
+              <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
+                Academic Questions
+              </Typography>
+            </Stack>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => {
+                const el = document.getElementById("answerComposer");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                borderRadius: "8px",
+                background: "linear-gradient(135deg, #4F46E5 0%, #A855F7 100%)",
+                px: 2,
+              }}
+            >
+              Write Response
+            </Button>
+          </Box>
 
           {loadingDetail ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
               <CircularProgress size={45} />
             </Box>
           ) : (
-            <Grid container spacing={3}>
-              {/* Question Column */}
-              <Grid item xs={12} md={9}>
+            <Grid container spacing={3} sx={{ width: "100%", mx: 0 }}>
+              {/* ── LEFT MAIN COLUMN (8 cols) ── */}
+              <Grid size={{ xs: 12, md: 8 }} sx={{ pl: { xs: 0, md: 3 } }}>
+
+                {/* ── QUESTION CARD ── */}
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 4,
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    p: { xs: 3, sm: 4 },
+                    border: "1px solid rgba(255,255,255,0.08)",
                     borderRadius: "16px",
                     background: "rgba(30, 41, 59, 0.25)",
                     backdropFilter: "blur(12px)",
-                    mb: 4,
+                    mb: 3,
                   }}
                 >
-                  <Stack direction="row" spacing={3} alignItems="flex-start">
-                    {/* Voting */}
-                    <Stack alignItems="center" spacing={1} sx={{ bgcolor: "rgba(255,255,255,0.02)", p: 1.5, borderRadius: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
-                      <IconButton
+                  {/* Title */}
+                  <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ mb: 2, lineHeight: 1.35 }}>
+                    {detailQuery.title}
+                  </Typography>
+
+                  {/* Tags & time row */}
+                  <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} sx={{ mb: 3 }}>
+                    {detailQuery.tags?.map((t) => (
+                      <Chip
+                        key={t}
+                        label={`#${t}`}
                         size="small"
-                        onClick={() => handleQueryVote(detailQuery._id, true)}
-                        sx={{ color: detailQuery.upvotes?.includes(user._id) ? "primary.main" : "text.secondary" }}
+                        sx={{
+                          bgcolor: "rgba(255,255,255,0.05)",
+                          color: "text.secondary",
+                          fontWeight: 700,
+                          fontSize: "0.68rem",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: "6px",
+                          height: 22,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                    ))}
+                    <Typography variant="caption" color="text.disabled" sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <AccessTime sx={{ fontSize: 11 }} /> Asked {formatRelativeTime(detailQuery.createdAt)}
+                    </Typography>
+                  </Stack>
+
+                  {/* Description body */}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.9rem", lineHeight: 1.7, whiteSpace: "pre-line", mb: 3, pb: 3, borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    {detailQuery.description}
+                  </Typography>
+
+                  {/* Author bar + vote actions */}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                    {/* Author */}
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar
+                        src={detailQuery.author?.photo ? `${apiBase}/uploads/${detailQuery.author.photo}` : undefined}
+                        sx={{ width: 36, height: 36, border: "1.5px solid rgba(255,255,255,0.08)" }}
                       >
-                        <ThumbUp sx={{ fontSize: 18 }} />
-                      </IconButton>
-                      <Typography variant="subtitle2" fontWeight={850} color="text.primary">
-                        {(detailQuery.upvotes?.length || 0) - (detailQuery.downvotes?.length || 0)}
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleQueryVote(detailQuery._id, false)}
-                        sx={{ color: detailQuery.downvotes?.includes(user._id) ? "error.main" : "text.secondary" }}
-                      >
-                        <ThumbDown sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </Stack>
-
-                    {/* Content */}
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ mb: 1.5 }}>
-                        {detailQuery.title}
-                      </Typography>
-
-                      <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ mb: 3 }}>
-                        {detailQuery.tags?.map((t) => (
-                          <Chip
-                            key={t}
-                            label={`#${t}`}
-                            size="small"
-                            sx={{
-                              bgcolor: "rgba(79, 70, 229, 0.08)",
-                              color: "primary.light",
-                              fontWeight: 700,
-                              fontSize: "0.7rem",
-                            }}
-                          />
-                        ))}
-                      </Stack>
-
-                      <Typography
-                        variant="body1"
-                        color="text.primary"
-                        sx={{ fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", mb: 4 }}
-                      >
-                        {detailQuery.description}
-                      </Typography>
-
-                      <Divider sx={{ mb: 2, borderColor: "rgba(255,255,255,0.06)" }} />
-
-                      {/* Author Attribution */}
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                        <Stack direction="row" spacing={1.5} alignItems="center">
-                          <Avatar
-                            src={
-                              detailQuery.author?.photo
-                                ? `${apiBase}/uploads/${detailQuery.author.photo}`
-                                : undefined
-                            }
-                            sx={{ width: 34, height: 34, border: "1.5px solid rgba(255,255,255,0.06)" }}
-                          >
-                            {detailQuery.author?.firstName?.[0]}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ fontSize: "0.82rem" }}>
-                              {detailQuery.author?.firstName} {detailQuery.author?.lastName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem" }}>
-                              {detailQuery.author?.course || "Student"} · {detailQuery.author?.branch || ""}
-                            </Typography>
+                        {detailQuery.author?.firstName?.[0]}
+                      </Avatar>
+                      <Box>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="caption" fontWeight={800} color="text.primary" sx={{ fontSize: "0.8rem" }}>
+                            {detailQuery.author?.firstName} {detailQuery.author?.lastName}
+                          </Typography>
+                          <Box sx={{ px: 1, py: 0.2, bgcolor: "rgba(255,255,255,0.05)", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                            <Typography variant="caption" sx={{ fontSize: "0.6rem", color: "text.secondary", fontFamily: "monospace" }}>Author</Typography>
                           </Box>
                         </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem" }}>
+                          {detailQuery.author?.course} · {detailQuery.author?.branch}
+                        </Typography>
+                      </Box>
+                    </Stack>
 
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip
-                            icon={<School sx={{ fontSize: "12px !important", color: "primary.main" }} />}
-                            label={detailQuery.college?.collegeName}
+                    {/* Vote pill + bookmark */}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {/* Pin Question */}
+                      {canModerate && sameCollege(detailQuery.college) && (
+                        <Tooltip title={detailQuery.isPinned ? "Unpin Question" : "Pin Question"}>
+                          <IconButton
                             size="small"
+                            onClick={() => handlePinQuery(detailQuery._id)}
                             sx={{
-                              height: 24,
-                              bgcolor: "rgba(79, 70, 229, 0.08)",
-                              color: "primary.light",
-                              fontWeight: 800,
-                              fontSize: "0.68rem",
-                              border: "1px solid rgba(79,70,229,0.15)",
+                              color: detailQuery.isPinned ? "primary.main" : "text.secondary",
+                              bgcolor: detailQuery.isPinned ? "rgba(99, 102, 241, 0.1)" : "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              "&:hover": { bgcolor: "rgba(99, 102, 241, 0.15)" },
                             }}
-                          />
-                          <Chip
-                            icon={<AccessTime sx={{ fontSize: "12px !important" }} />}
-                            label={formatRelativeTime(detailQuery.createdAt)}
+                          >
+                            <PushPin sx={{ fontSize: 16, transform: detailQuery.isPinned ? "rotate(45deg)" : "none" }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {/* Delete Question */}
+                      {(detailQuery.author?._id === user._id ||
+                        isSuperAdmin ||
+                        (isCollegeAdmin && sameCollege(detailQuery.college)) ||
+                        (isModerator && sameCollege(detailQuery.college))) && (
+                        <Tooltip title="Delete Question">
+                          <IconButton
                             size="small"
+                            onClick={() => handleDeleteQuery(detailQuery._id)}
                             sx={{
-                              height: 24,
-                              bgcolor: "rgba(255, 255, 255, 0.02)",
-                              color: "text.secondary",
-                              fontSize: "0.68rem",
+                              color: "error.main",
+                              bgcolor: "rgba(244, 63, 94, 0.05)",
+                              border: "1px solid rgba(244, 63, 94, 0.15)",
+                              "&:hover": { bgcolor: "rgba(244, 63, 94, 0.15)" },
                             }}
-                          />
-                        </Stack>
+                          >
+                            <Delete sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {/* Report Question */}
+                      {detailQuery.author?._id !== user._id && (
+                        <Tooltip title="Report Question">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleReportQuery(detailQuery._id)}
+                            sx={{
+                              color: "warning.main",
+                              bgcolor: "rgba(245, 158, 11, 0.05)",
+                              border: "1px solid rgba(245, 158, 11, 0.15)",
+                              "&:hover": { bgcolor: "rgba(245, 158, 11, 0.15)" },
+                            }}
+                          >
+                            <Flag sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        sx={{
+                          bgcolor: "rgba(255, 255, 255, 0.03)",
+                          border: "1px solid rgba(255, 255, 255, 0.06)",
+                          borderRadius: "30px",
+                          px: 0.6,
+                          py: 0.3,
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() => handleQueryVote(detailQuery._id, true)}
+                          sx={{
+                            color: detailQuery.upvotes?.includes(user._id) ? "primary.main" : "text.secondary",
+                            "&:hover": { color: "primary.main", bgcolor: "rgba(129, 140, 248, 0.1)" },
+                            p: 0.5,
+                          }}
+                        >
+                          <ArrowUpward sx={{ fontSize: 16 }} />
+                        </IconButton>
+                        <Typography
+                          variant="caption"
+                          fontWeight={800}
+                          sx={{
+                            mx: 1,
+                            fontSize: "0.78rem",
+                            color: detailQuery.upvotes?.includes(user._id)
+                              ? "primary.main"
+                              : detailQuery.downvotes?.includes(user._id)
+                              ? "error.main"
+                              : "text.primary",
+                          }}
+                        >
+                          {(detailQuery.upvotes?.length || 0) - (detailQuery.downvotes?.length || 0)}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleQueryVote(detailQuery._id, false)}
+                          sx={{
+                            color: detailQuery.downvotes?.includes(user._id) ? "error.main" : "text.secondary",
+                            "&:hover": { color: "error.main", bgcolor: "rgba(244, 63, 94, 0.1)" },
+                            p: 0.5,
+                          }}
+                        >
+                          <ArrowDownward sx={{ fontSize: 16 }} />
+                        </IconButton>
                       </Stack>
-                    </Box>
+                    </Stack>
                   </Stack>
                 </Paper>
 
-                {/* Answers Section */}
-                <Typography variant="h6" fontWeight={850} color="text.primary" sx={{ mb: 2.5 }}>
-                  {detailAnswers.length} {detailAnswers.length === 1 ? "Answer" : "Answers"}
-                </Typography>
+                {/* ── RESPONSES HEADER + FILTER ── */}
+                <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 2.5 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Typography variant="subtitle1" fontWeight={850} color="text.primary">
+                      Responses
+                    </Typography>
+                    <Box
+                      sx={{
+                        px: 1.5,
+                        py: 0.3,
+                        bgcolor: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "20px",
+                        minWidth: 28,
+                        textAlign: "center",
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight={700} sx={{ fontFamily: "monospace" }}>
+                        {detailAnswers.length}
+                      </Typography>
+                    </Box>
+                  </Stack>
 
-                <Stack spacing={3} sx={{ mb: 5 }}>
-                  {/* Sort: accepted answer first, then others */}
+                  {/* Filter tabs */}
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "10px",
+                      p: 0.5,
+                    }}
+                  >
+                    {[
+                      { key: "all", label: "All" },
+                      { key: "official", label: "Verified Staff" },
+                      { key: "student", label: "Community" },
+                    ].map(({ key, label }) => (
+                      <Button
+                        key={key}
+                        size="small"
+                        onClick={() => setAnswerFilter(key)}
+                        sx={{
+                          textTransform: "none",
+                          fontSize: "0.72rem",
+                          fontWeight: answerFilter === key ? 800 : 600,
+                          color: answerFilter === key ? "text.primary" : "text.secondary",
+                          bgcolor: answerFilter === key ? "rgba(255,255,255,0.07)" : "transparent",
+                          borderRadius: "7px",
+                          px: 1.5,
+                          py: 0.6,
+                          minWidth: "unset",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.05)", color: "text.primary" },
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Stack>
+
+                {/* ── ANSWERS LIST ── */}
+                <Stack spacing={2.5} sx={{ mb: 4 }}>
                   {[...detailAnswers]
                     .sort((a, b) => {
                       const isAAccepted = detailQuery.acceptedAnswer?._id === a._id || detailQuery.acceptedAnswer === a._id;
@@ -434,7 +714,9 @@ export default function QueriesPage() {
                       return 0;
                     })
                     .map((ans) => {
-                      const isAccepted = detailQuery.acceptedAnswer === ans._id || detailQuery.acceptedAnswer?._id === ans._id;
+                      const isAccepted =
+                        detailQuery.acceptedAnswer === ans._id ||
+                        detailQuery.acceptedAnswer?._id === ans._id;
                       const isQueryAuthor = detailQuery.author?._id === user._id;
 
                       return (
@@ -443,219 +725,624 @@ export default function QueriesPage() {
                           elevation={0}
                           sx={{
                             p: 3,
-                            border: isAccepted ? "1px solid #10B981" : "1px solid rgba(255, 255, 255, 0.08)",
-                            borderRadius: "16px",
+                            border: isAccepted
+                              ? "1.5px solid #059669"
+                              : "1px solid rgba(255,255,255,0.08)",
+                            borderRadius: "14px",
                             background: isAccepted
-                              ? "rgba(16, 185, 129, 0.05)"
-                              : "rgba(30, 41, 59, 0.15)",
-                            backdropFilter: "blur(12px)",
-                            position: "relative",
+                              ? "rgba(5,150,105,0.04)"
+                              : "rgba(30, 41, 59, 0.25)",
+                            boxShadow: isAccepted ? "0 4px 24px rgba(5,150,105,0.1)" : "none",
+                            transition: "all 0.25s ease",
+                            "&:hover": {
+                              borderColor: isAccepted ? "#059669" : "rgba(255,255,255,0.14)",
+                            },
                           }}
                         >
+                          {/* Card header: verified badge */}
                           {isAccepted && (
-                            <Chip
-                              icon={<CheckCircle sx={{ fontSize: "12px !important", color: "#10B981" }} />}
-                              label="Best Solution"
-                              size="small"
+                            <Stack
+                              direction="row"
+                              justifyContent="space-between"
+                              alignItems="center"
                               sx={{
-                                position: "absolute",
-                                top: 16,
-                                right: 16,
-                                height: 22,
-                                bgcolor: "rgba(16, 185, 129, 0.12)",
-                                color: "#10B981",
-                                fontWeight: 800,
-                                fontSize: "0.62rem",
-                                textTransform: "uppercase",
-                                border: "1px solid rgba(16, 185, 129, 0.2)",
+                                mb: 2.5,
+                                pb: 2,
+                                borderBottom: "1px solid rgba(255,255,255,0.06)",
                               }}
-                            />
+                            >
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <CheckCircle sx={{ fontSize: 14, color: "#10B981" }} />
+                                <Typography
+                                  variant="caption"
+                                  fontWeight={700}
+                                  sx={{ color: "#10B981", fontSize: "0.72rem" }}
+                                >
+                                  Accepted Official Solution
+                                </Typography>
+                              </Stack>
+                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
+                                {formatRelativeTime(ans.createdAt)}
+                              </Typography>
+                            </Stack>
                           )}
 
-                          <Stack direction="row" spacing={3} alignItems="flex-start">
-                            {/* Vote columns */}
-                            <Stack alignItems="center" spacing={0.5}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleAnswerVote(ans._id, true)}
-                                sx={{ color: ans.upvotes?.includes(user._id) ? "primary.main" : "text.secondary" }}
-                              >
-                                <ThumbUp sx={{ fontSize: 15 }} />
-                              </IconButton>
-                              <Typography variant="caption" fontWeight={800} color="text.secondary">
-                                {(ans.upvotes?.length || 0) - (ans.downvotes?.length || 0)}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleAnswerVote(ans._id, false)}
-                                sx={{ color: ans.downvotes?.includes(user._id) ? "error.main" : "text.secondary" }}
-                              >
-                                <ThumbDown sx={{ fontSize: 15 }} />
-                              </IconButton>
+                          {/* Answer body */}
+                          <Typography
+                            variant="body2"
+                            color="text.primary"
+                            sx={{ fontSize: "0.88rem", lineHeight: 1.7, mb: 3 }}
+                          >
+                            {ans.content}
+                          </Typography>
 
-                              {/* Best solution toggle button for Query Author */}
-                              {isQueryAuthor && (
-                                <Tooltip title={isAccepted ? "Remove Solution status" : "Mark as Best Solution"}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleAcceptAnswer(ans._id)}
-                                    sx={{ mt: 1.5, color: isAccepted ? "#10B981" : "rgba(255,255,255,0.15)" }}
-                                  >
-                                    <CheckCircleOutline sx={{ fontSize: 20 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
+                          {/* Author + Actions row */}
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            flexWrap="wrap"
+                            gap={2}
+                            sx={{ pt: 2.5, borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                          >
+                            {/* Author info */}
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Avatar
+                                src={ans.author?.photo ? `${apiBase}/uploads/${ans.author.photo}` : undefined}
+                                sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.08)" }}
+                              >
+                                {ans.author?.firstName?.[0]}
+                              </Avatar>
+                              <Box>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Typography variant="caption" fontWeight={800} color="text.primary" sx={{ fontSize: "0.78rem" }}>
+                                    {ans.author?.firstName} {ans.author?.lastName}
+                                  </Typography>
+                                  {isAccepted && (
+                                    <Box
+                                      sx={{
+                                        px: 1,
+                                        py: 0.2,
+                                        bgcolor: "rgba(5,150,105,0.1)",
+                                        border: "1px solid rgba(5,150,105,0.2)",
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      <Typography variant="caption" sx={{ fontSize: "0.58rem", color: "#10B981", fontWeight: 700 }}>
+                                        Verified
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Stack>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                                  {ans.author?.course || ""} · {ans.college?.collegeName || ""}
+                                </Typography>
+                              </Box>
                             </Stack>
 
-                            {/* Content & nested comments */}
-                            <Box sx={{ flexGrow: 1, pr: isAccepted ? 10 : 0 }}>
-                              <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.88rem", lineHeight: 1.5, mb: 3 }}>
-                                {ans.content}
-                              </Typography>
+                             {/* Vote + Accept actions */}
+                             <Stack direction="row" spacing={1} alignItems="center">
+                               <Stack
+                                 direction="row"
+                                 alignItems="center"
+                                 sx={{
+                                   bgcolor: "rgba(255, 255, 255, 0.03)",
+                                   border: "1px solid rgba(255, 255, 255, 0.06)",
+                                   borderRadius: "30px",
+                                   px: 0.5,
+                                   py: 0.2,
+                                 }}
+                               >
+                                 <IconButton
+                                   size="small"
+                                   onClick={() => handleAnswerVote(ans._id, true)}
+                                   sx={{
+                                     color: ans.upvotes?.includes(user._id) ? "primary.main" : "text.secondary",
+                                     "&:hover": { color: "primary.main", bgcolor: "rgba(129, 140, 248, 0.1)" },
+                                     p: 0.4,
+                                   }}
+                                 >
+                                   <ArrowUpward sx={{ fontSize: 15 }} />
+                                 </IconButton>
+                                 <Typography
+                                   variant="caption"
+                                   fontWeight={800}
+                                   sx={{
+                                     mx: 0.8,
+                                     fontSize: "0.74rem",
+                                     color: ans.upvotes?.includes(user._id)
+                                       ? "primary.main"
+                                       : ans.downvotes?.includes(user._id)
+                                       ? "error.main"
+                                       : "text.primary",
+                                   }}
+                                 >
+                                   {(ans.upvotes?.length || 0) - (ans.downvotes?.length || 0)}
+                                 </Typography>
+                                 <IconButton
+                                   size="small"
+                                   onClick={() => handleAnswerVote(ans._id, false)}
+                                   sx={{
+                                     color: ans.downvotes?.includes(user._id) ? "error.main" : "text.secondary",
+                                     "&:hover": { color: "error.main", bgcolor: "rgba(244, 63, 94, 0.1)" },
+                                     p: 0.4,
+                                   }}
+                                 >
+                                   <ArrowDownward sx={{ fontSize: 15 }} />
+                                 </IconButton>
+                               </Stack>
+ 
+                               {/* Accept Answer (Solution badge) */}
+                               {(isQueryAuthor || isSuperAdmin || (isCollegeAdmin && sameCollege(detailQuery.college))) && (
+                                 <Button
+                                   size="small"
+                                   variant="outlined"
+                                   onClick={() => handleAcceptAnswer(ans._id)}
+                                   startIcon={
+                                     isAccepted ? (
+                                       <CheckCircle sx={{ fontSize: 12 }} />
+                                     ) : (
+                                       <CheckCircleOutline sx={{ fontSize: 12 }} />
+                                     )
+                                   }
+                                   sx={{
+                                     borderRadius: "8px",
+                                     textTransform: "none",
+                                     fontSize: "0.68rem",
+                                     fontWeight: 800,
+                                     borderColor: isAccepted ? "#10B981" : "rgba(255,255,255,0.12)",
+                                     color: isAccepted ? "#10B981" : "text.secondary",
+                                     bgcolor: isAccepted ? "rgba(16,185,129,0.05)" : "transparent",
+                                     "&:hover": {
+                                       borderColor: "#10B981",
+                                       bgcolor: "rgba(16,185,129,0.08)",
+                                     },
+                                     px: 1.5,
+                                     py: 0.5,
+                                   }}
+                                 >
+                                   {isAccepted ? "Accepted" : "Accept"}
+                                 </Button>
+                               )}
 
-                              {/* Answerer attribution */}
-                              <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5} sx={{ mb: 3 }}>
-                                <Stack direction="row" spacing={1.2} alignItems="center">
-                                  <Avatar
-                                    src={ans.author?.photo ? `${apiBase}/uploads/${ans.author.photo}` : undefined}
-                                    sx={{ width: 26, height: 26 }}
-                                  >
-                                    {ans.author?.firstName?.[0]}
-                                  </Avatar>
-                                  <Box>
-                                    <Typography variant="caption" fontWeight={800} color="text.primary" sx={{ fontSize: "0.78rem" }}>
-                                      {ans.author?.firstName} {ans.author?.lastName}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.62rem", mt: -0.2 }}>
-                                      {ans.author?.course || ""} · {ans.author?.branch || ""}
-                                    </Typography>
-                                  </Box>
-                                </Stack>
+                               {/* Delete Answer */}
+                               {(ans.author?._id === user._id ||
+                                 isSuperAdmin ||
+                                 (isCollegeAdmin && sameCollege(ans.college)) ||
+                                 (isModerator && sameCollege(ans.college))) && (
+                                 <Tooltip title="Delete Answer">
+                                   <IconButton
+                                     size="small"
+                                     onClick={() => handleDeleteAnswer(ans._id)}
+                                     sx={{
+                                       color: "error.main",
+                                       bgcolor: "rgba(244, 63, 94, 0.05)",
+                                       border: "1px solid rgba(244, 63, 94, 0.15)",
+                                       "&:hover": { bgcolor: "rgba(244, 63, 94, 0.15)" },
+                                     }}
+                                   >
+                                     <Delete sx={{ fontSize: 14 }} />
+                                   </IconButton>
+                                 </Tooltip>
+                               )}
 
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <Chip
-                                    label={ans.college?.collegeName}
-                                    size="small"
-                                    sx={{
-                                      height: 18,
-                                      bgcolor: "rgba(255,255,255,0.03)",
-                                      color: "text.secondary",
-                                      fontWeight: 700,
-                                      fontSize: "0.62rem",
-                                    }}
-                                  />
-                                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-                                    {formatRelativeTime(ans.createdAt)}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
+                               {/* Report Answer */}
+                               {ans.author?._id !== user._id && (
+                                 <Tooltip title="Report Answer">
+                                   <IconButton
+                                     size="small"
+                                     onClick={() => handleReportAnswer(ans._id)}
+                                     sx={{
+                                       color: "warning.main",
+                                       bgcolor: "rgba(245, 158, 11, 0.05)",
+                                       border: "1px solid rgba(245, 158, 11, 0.15)",
+                                       "&:hover": { bgcolor: "rgba(245, 158, 11, 0.15)" },
+                                     }}
+                                   >
+                                     <Flag sx={{ fontSize: 14 }} />
+                                   </IconButton>
+                                 </Tooltip>
+                               )}
+                             </Stack>
+                          </Stack>
 
-                              {/* Nested replies / Comments */}
-                              <Box sx={{ pl: 2, borderLeft: "1px solid rgba(255,255,255,0.06)", mt: 2 }}>
-                                <Stack spacing={1.5} sx={{ mb: 2 }}>
-                                  {ans.comments?.map((comment) => (
-                                    <Box key={comment._id} sx={{ bgcolor: "rgba(255,255,255,0.01)", p: 1.5, borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                                      <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.8rem", lineHeight: 1.4 }}>
+                          {/* Nested comments */}
+                          {(ans.comments?.length > 0 || true) && (
+                            <Box sx={{ mt: 2.5, pl: 2.5, borderLeft: "2px solid rgba(255,255,255,0.06)" }}>
+                              <Stack spacing={1.8} sx={{ mb: 2 }}>
+                                {ans.comments?.map((comment) => (
+                                  <Stack direction="row" spacing={1.5} key={comment._id} alignItems="flex-start">
+                                    <Avatar
+                                      src={comment.author?.photo ? `${apiBase}/uploads/${comment.author.photo}` : undefined}
+                                      sx={{ width: 24, height: 24, border: "1px solid rgba(255,255,255,0.08)" }}
+                                    >
+                                      {comment.author?.firstName?.[0]}
+                                    </Avatar>
+                                    <Box
+                                      sx={{
+                                        flexGrow: 1,
+                                        bgcolor: "rgba(255, 255, 255, 0.03)",
+                                        p: 1.5,
+                                        borderRadius: "12px",
+                                        border: "1px solid rgba(255, 255, 255, 0.04)",
+                                      }}
+                                    >
+                                      <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.8rem", lineHeight: 1.5, mb: 0.5 }}>
                                         {comment.content}
                                       </Typography>
-                                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                                        <Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ fontSize: "0.68rem" }}>
+                                      <Stack direction="row" spacing={1} alignItems="center">
+                                        <Typography variant="caption" fontWeight={800} color="primary.light" sx={{ fontSize: "0.68rem" }}>
                                           {comment.author?.firstName} {comment.author?.lastName}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
-                                          ({comment.college?.collegeName})
                                         </Typography>
                                         <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
                                           · {formatRelativeTime(comment.createdAt)}
                                         </Typography>
                                       </Stack>
                                     </Box>
-                                  ))}
-                                </Stack>
+                                  </Stack>
+                                ))}
+                              </Stack>
 
-                                {/* Post nested comment comment field */}
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <TextField
-                                    placeholder="Add a reply comment..."
-                                    size="small"
-                                    value={commentContents[ans._id] || ""}
-                                    onChange={(e) =>
-                                      setCommentContents((prev) => ({ ...prev, [ans._id]: e.target.value }))
-                                    }
-                                    sx={{
-                                      flexGrow: 1,
-                                      "& .MuiOutlinedInput-root": {
-                                        borderRadius: "20px",
-                                        bgcolor: "rgba(255,255,255,0.01)",
-                                        fontSize: "0.75rem",
-                                      },
-                                    }}
-                                  />
-                                  <IconButton
-                                    onClick={() => handleCommentSubmit(ans._id)}
-                                    color="primary"
-                                    size="small"
-                                    sx={{ bgcolor: "rgba(79,70,229,0.06)", border: "1px solid rgba(79,70,229,0.12)" }}
-                                  >
-                                    <Send sx={{ fontSize: 13 }} />
-                                  </IconButton>
-                                </Stack>
-                              </Box>
+                              {/* Reply input */}
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <TextField
+                                  placeholder="Add a reply comment..."
+                                  size="small"
+                                  value={commentContents[ans._id] || ""}
+                                  onChange={(e) =>
+                                    setCommentContents((prev) => ({ ...prev, [ans._id]: e.target.value }))
+                                  }
+                                  sx={{
+                                    flexGrow: 1,
+                                    "& .MuiOutlinedInput-root": {
+                                      borderRadius: "30px",
+                                      bgcolor: "rgba(255,255,255,0.03)",
+                                      fontSize: "0.78rem",
+                                      px: 2,
+                                      border: "1px solid rgba(255,255,255,0.05)",
+                                      "& fieldset": { border: "none" },
+                                    },
+                                  }}
+                                />
+                                <IconButton
+                                  onClick={() => handleCommentSubmit(ans._id)}
+                                  disabled={!(commentContents[ans._id] || "").trim()}
+                                  sx={{
+                                    p: 1,
+                                    background: !(commentContents[ans._id] || "").trim()
+                                      ? "rgba(255,255,255,0.02)"
+                                      : "linear-gradient(135deg, #6366F1 0%, #A855F7 100%)",
+                                    color: "#fff",
+                                    borderRadius: "50%",
+                                    "&:hover": { background: "linear-gradient(135deg, #4F46E5 0%, #9333EA 100%)" },
+                                    "&.Mui-disabled": { background: "rgba(255,255,255,0.02)", color: "rgba(255,255,255,0.2)" },
+                                  }}
+                                >
+                                  <Send sx={{ fontSize: 12 }} />
+                                </IconButton>
+                              </Stack>
                             </Box>
-                          </Stack>
+                          )}
                         </Paper>
                       );
                     })}
                 </Stack>
 
-                {/* Add Answer Form */}
+                {/* ── WRITE RESPONSE COMPOSER ── */}
                 <Paper
+                  id="answerComposer"
                   elevation={0}
                   component="form"
                   onSubmit={handleAnswerSubmit}
                   sx={{
                     p: 3,
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    borderRadius: "16px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "14px",
                     background: "rgba(30, 41, 59, 0.25)",
                     mb: 5,
                   }}
                 >
-                  <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1.5 }}>
-                    Your Solution
-                  </Typography>
-                  <TextField
-                    placeholder="Provide a detailed solution or helpful feedback..."
-                    multiline
-                    rows={4}
-                    fullWidth
-                    value={answerContent}
-                    onChange={(e) => setAnswerContent(e.target.value)}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Typography variant="caption" fontWeight={800} color="text.primary" sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.68rem" }}>
+                      Your Response
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
+                      Keep answers factual and clear
+                    </Typography>
+                  </Stack>
+
+                  <Box
                     sx={{
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      bgcolor: "rgba(255,255,255,0.015)",
+                      "&:focus-within": { borderColor: "rgba(255,255,255,0.18)" },
+                      transition: "border-color 0.2s",
                       mb: 2,
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "12px",
-                        bgcolor: "rgba(255, 255, 255, 0.01)",
-                        fontSize: "0.85rem",
-                      },
-                    }}
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!answerContent.trim()}
-                    sx={{
-                      borderRadius: "30px",
-                      textTransform: "none",
-                      fontWeight: 750,
-                      px: 3,
-                      background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)",
-                      fontSize: "0.78rem",
                     }}
                   >
-                    Post Answer
-                  </Button>
+                    {/* Formatting toolbar */}
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{
+                        px: 1.5,
+                        py: 1,
+                        bgcolor: "rgba(0,0,0,0.2)",
+                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {["B", "I", "</>", "—", "≡", "🔗"].map((icon) => (
+                        <IconButton
+                          key={icon}
+                          size="small"
+                          sx={{
+                            color: "text.disabled",
+                            fontSize: "0.65rem",
+                            fontWeight: 800,
+                            p: 0.5,
+                            borderRadius: "4px",
+                            "&:hover": { color: "text.primary", bgcolor: "rgba(255,255,255,0.06)" },
+                          }}
+                        >
+                          {icon}
+                        </IconButton>
+                      ))}
+                    </Stack>
+                    <TextField
+                      placeholder="Type your response or details here..."
+                      multiline
+                      rows={4}
+                      fullWidth
+                      value={answerContent}
+                      onChange={(e) => setAnswerContent(e.target.value)}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 0,
+                          bgcolor: "transparent",
+                          fontSize: "0.85rem",
+                          "& fieldset": { border: "none" },
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Stack direction="row" justifyContent="flex-end">
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={!answerContent.trim()}
+                      endIcon={<Send sx={{ fontSize: 13 }} />}
+                      sx={{
+                        borderRadius: "10px",
+                        textTransform: "none",
+                        fontWeight: 750,
+                        px: 3,
+                        background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)",
+                        fontSize: "0.78rem",
+                        "&.Mui-disabled": { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)" },
+                      }}
+                    >
+                      Publish Response
+                    </Button>
+                  </Stack>
                 </Paper>
+              </Grid>
+
+              {/* ── RIGHT SIDEBAR (4 cols) ── */}
+              <Grid size={{ xs: 12, md: 4 }} sx={{ pl: { xs: 0, md: 3 } }}>
+                <Stack spacing={2.5}>
+
+                  {/* Thread Details Card */}
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "14px",
+                      background: "rgba(30, 41, 59, 0.25)",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight={800}
+                      color="text.secondary"
+                      sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem", display: "block", mb: 2 }}
+                    >
+                      Thread Details
+                    </Typography>
+
+                    <Stack spacing={0}>
+                      {[
+                        {
+                          label: "Status",
+                          value: detailQuery.acceptedAnswer ? "Solved" : "Open",
+                          color: detailQuery.acceptedAnswer ? "#10B981" : "#F59E0B",
+                          dot: true,
+                        },
+                        { label: "Total Responses", value: detailAnswers.length },
+                        { label: "Category", value: detailQuery.tags?.[0] || "General" },
+                        {
+                          label: "Asked by",
+                          value: `${detailQuery.author?.firstName} ${detailQuery.author?.lastName}`,
+                        },
+                        {
+                          label: "College",
+                          value: detailQuery.college?.collegeName || "—",
+                        },
+                      ].map(({ label, value, color, dot }, i, arr) => (
+                        <Stack
+                          key={label}
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          sx={{
+                            py: 1.2,
+                            borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
+                            {label}
+                          </Typography>
+                          <Stack direction="row" spacing={0.6} alignItems="center">
+                            {dot && (
+                              <Box
+                                sx={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  bgcolor: color,
+                                }}
+                              />
+                            )}
+                            <Typography
+                              variant="caption"
+                              fontWeight={700}
+                              sx={{
+                                fontSize: "0.72rem",
+                                color: color || "text.primary",
+                                fontFamily: typeof value === "number" ? "monospace" : "inherit",
+                                textAlign: "right",
+                                maxWidth: 130,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {value}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </Paper>
+
+                  {/* Participants Card */}
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "14px",
+                      background: "rgba(30, 41, 59, 0.25)",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight={800}
+                      color="text.secondary"
+                      sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem", display: "block", mb: 2 }}
+                    >
+                      Participants
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.8}>
+                      {participants.slice(0, 8).map((p, idx) => (
+                        <Tooltip key={p?._id || idx} title={`${p?.firstName} ${p?.lastName}`} placement="top">
+                          <Avatar
+                            src={p?.photo ? `${apiBase}/uploads/${p.photo}` : undefined}
+                            sx={{
+                              width: 30,
+                              height: 30,
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              border: idx === 0 ? "1.5px solid rgba(99,102,241,0.5)" : "1px solid rgba(255,255,255,0.1)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {getInitials(p?.firstName, p?.lastName)}
+                          </Avatar>
+                        </Tooltip>
+                      ))}
+                      {participants.length > 8 && (
+                        <Box
+                          sx={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: "50%",
+                            bgcolor: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Typography variant="caption" sx={{ fontSize: "0.6rem", fontWeight: 700, color: "text.secondary" }}>
+                            +{participants.length - 8}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Paper>
+
+                  {/* Related Questions */}
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "14px",
+                      background: "rgba(30, 41, 59, 0.25)",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight={800}
+                      color="text.secondary"
+                      sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem", display: "block", mb: 2 }}
+                    >
+                      Related Questions
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {queries
+                        .filter((q) => q._id !== detailQuery._id)
+                        .slice(0, 4)
+                        .map((q) => (
+                          <Box
+                            key={q._id}
+                            onClick={() => fetchQueryDetail(q._id)}
+                            sx={{
+                              p: 1.5,
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                              "&:hover": {
+                                bgcolor: "rgba(255,255,255,0.04)",
+                                "& .related-title": { color: "primary.light" },
+                              },
+                            }}
+                          >
+                            <Typography
+                              className="related-title"
+                              variant="caption"
+                              fontWeight={600}
+                              color="text.secondary"
+                              sx={{
+                                fontSize: "0.74rem",
+                                lineHeight: 1.4,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                transition: "color 0.15s",
+                              }}
+                            >
+                              {q.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.62rem", mt: 0.5, display: "block" }}>
+                              {q.answersCount || 0} responses
+                            </Typography>
+                          </Box>
+                        ))}
+                      {queries.filter((q) => q._id !== detailQuery._id).length === 0 && (
+                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.72rem" }}>
+                          No related questions found
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Paper>
+
+                </Stack>
               </Grid>
             </Grid>
           )}
@@ -663,49 +1350,58 @@ export default function QueriesPage() {
       ) : (
         /* ================== LIST VIEW ================== */
         <Box>
-          {/* Header block */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            spacing={2}
-            sx={{ mb: 4 }}
+          {/* Welcome Banner */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3.5,
+              mb: 4,
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)",
+              color: "#ffffff",
+              boxShadow: "0 8px 30px rgba(79, 70, 229, 0.25)",
+              position: "relative",
+              overflow: "hidden",
+            }}
           >
-            <Box>
-              <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <QuestionAnswer sx={{ color: "primary.main" }} />
-                Campus Q&A Discussions
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Ask questions, share solutions, and discuss university life with classmates
-              </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={3} sx={{ position: "relative", zIndex: 1 }}>
+              <Box>
+                <Typography variant="h5" fontWeight="900" gutterBottom sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" } }}>
+                  Campus Q&A Discussions 💬
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, maxWidth: "600px", fontWeight: 500, fontSize: "0.85rem", lineHeight: 1.45 }}>
+                  Ask questions, share verified solutions, and engage in discussions about university courses, exams, placements, and campus life.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<Add sx={{ fontSize: 16 }} />}
+                onClick={() => setAskModalOpen(true)}
+                sx={{
+                  bgcolor: "#ffffff",
+                  color: "#4F46E5",
+                  fontWeight: 800,
+                  fontSize: "0.78rem",
+                  px: 3,
+                  py: 1,
+                  borderRadius: "10px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                  textTransform: "none",
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.9)",
+                    color: "#3730A3",
+                    transform: "translateY(-1px)",
+                  },
+                }}
+              >
+                Ask a Question
+              </Button>
+            </Stack>
+            <Box sx={{ position: "absolute", bottom: "-40px", right: "-30px", opacity: 0.08, zIndex: 0, transform: "rotate(-15deg)" }}>
+              <QuestionAnswer sx={{ fontSize: 200 }} />
             </Box>
-
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setAskModalOpen(true)}
-              sx={{
-                borderRadius: "30px",
-                height: 36,
-                px: 3,
-                fontWeight: 750,
-                textTransform: "none",
-                background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)",
-                boxShadow: "0 4px 15px rgba(79, 70, 229, 0.3)",
-                fontSize: "0.78rem",
-              }}
-            >
-              Ask a Question
-            </Button>
-          </Stack>
-
-          {/* AI Copilot Search Assistant */}
-          <AiCopilot
-            type="qna"
-            data={queries}
-            onAiFilter={(ids) => setAiFilteredIds(ids)}
-          />
+          </Paper>
 
           {/* Filter Toolbar Panel */}
           <Paper
@@ -713,8 +1409,8 @@ export default function QueriesPage() {
             sx={{
               p: 2.5,
               mb: 3,
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(30, 41, 59, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.06)",
+              background: "rgba(30, 41, 59, 0.2)",
               backdropFilter: "blur(12px)",
               borderRadius: "16px",
               display: "flex",
@@ -730,31 +1426,26 @@ export default function QueriesPage() {
               justifyContent="space-between"
               sx={{ width: "100%" }}
             >
-              <TextField
-                placeholder="Search queries, descriptions, or tags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                size="small"
-                sx={{
-                  flexGrow: 1,
-                  width: "100%",
-                  "& .MuiOutlinedInput-root": {
-                    background: "rgba(255, 255, 255, 0.02)",
-                    borderRadius: "20px",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    "& fieldset": { border: "none" },
-                  },
+              <AISearchInput
+                placeholder="Ask AI or search queries..."
+                context="queries"
+                onFilterApply={(res) => {
+                  setSearchQuery(res.search || "");
+                  if (res.tag) {
+                    const exists = PRESET_TAGS.some(t => t.toLowerCase() === res.tag.toLowerCase());
+                    if (exists) {
+                      setSelectedTag(PRESET_TAGS.find(t => t.toLowerCase() === res.tag.toLowerCase()));
+                    }
+                  }
+                  if (res.myCollegeOnly !== undefined) {
+                    setMyCollegeOnly(res.myCollegeOnly);
+                  }
+                  setCurrentPage(1);
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search sx={{ color: "text.secondary", fontSize: 18 }} />
-                    </InputAdornment>
-                  ),
-                }}
+                sx={{ flexGrow: 1, width: "100%" }}
               />
 
-              <Box sx={{ flexShrink: 0, bgcolor: "rgba(255,255,255,0.02)", px: 2, py: 0.6, borderRadius: "20px", border: "1px solid rgba(255,255,255,0.04)" }}>
+              <Box sx={{ flexShrink: 0, bgcolor: "rgba(255,255,255,0.02)", px: 2, py: 0.5, borderRadius: "10px", border: "1px solid rgba(255,255,255,0.04)" }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -765,7 +1456,7 @@ export default function QueriesPage() {
                     />
                   }
                   label={
-                    <Typography variant="body2" fontWeight={800} color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+                    <Typography variant="body2" fontWeight={800} color="text.secondary" sx={{ fontSize: "0.75rem" }}>
                       My College Only
                     </Typography>
                   }
@@ -801,12 +1492,13 @@ export default function QueriesPage() {
                     size="small"
                     sx={{
                       cursor: "pointer",
-                      height: 26,
+                      height: 24,
                       fontWeight: 800,
+                      fontSize: "0.68rem",
                       bgcolor: selectedTag === tag ? "primary.main" : "rgba(255, 255, 255, 0.03)",
                       color: selectedTag === tag ? "#FFFFFF" : "text.secondary",
                       border: "1px solid rgba(255,255,255,0.04)",
-                      borderRadius: "15px",
+                      borderRadius: "6px",
                       transition: "all 0.15s ease",
                       "&:hover": { bgcolor: selectedTag === tag ? "primary.dark" : "rgba(255,255,255,0.06)" },
                     }}
@@ -827,8 +1519,8 @@ export default function QueriesPage() {
               sx={{
                 p: 6,
                 textAlign: "center",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                background: "rgba(30, 41, 59, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                background: "rgba(30, 41, 59, 0.2)",
                 borderRadius: "16px",
               }}
             >
@@ -840,31 +1532,13 @@ export default function QueriesPage() {
                 Got a doubt about exams, hostels, or tech? Ask your first question!
               </Typography>
             </Paper>
-          ) : queriesToDisplay.length === 0 ? (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 6,
-                textAlign: "center",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                background: "rgba(30, 41, 59, 0.15)",
-                borderRadius: "16px",
-              }}
-            >
-              <HelpOutline sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
-              <Typography variant="body1" fontWeight={750} color="text.secondary">
-                No questions match the AI filters.
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                Try adjusting your search query or clear the AI filter.
-              </Typography>
-            </Paper>
           ) : (
             <Stack spacing={2.5}>
-              {queriesToDisplay.map((q) => {
+              {queries.map((q) => {
                 const votesCount = (q.upvotes?.length || 0) - (q.downvotes?.length || 0);
                 const hasUpvoted = q.upvotes?.includes(user._id);
                 const hasDownvoted = q.downvotes?.includes(user._id);
+                const isSolved = !!q.acceptedAnswer;
 
                 return (
                   <Paper
@@ -873,53 +1547,29 @@ export default function QueriesPage() {
                     onClick={() => fetchQueryDetail(q._id)}
                     sx={{
                       p: 3,
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      borderRadius: "16px",
-                      background: "rgba(30, 41, 59, 0.2)",
-                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255, 255, 255, 0.06)",
+                      borderLeft: isSolved
+                        ? "4px solid #10B981"
+                        : "4px solid #6366F1",
+                      borderRadius: "14px",
+                      background: "rgba(30, 41, 59, 0.25)",
+                      backdropFilter: "blur(12px)",
                       cursor: "pointer",
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        borderColor: "rgba(255,255,255,0.15)",
+                        borderColor: isSolved ? "#10B981" : "rgba(255,255,255,0.15)",
                         transform: "translateY(-2px)",
                         boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
                       },
                     }}
                   >
-                    <Stack direction="row" spacing={3} alignItems="center">
-                      {/* Left: Voting indicators */}
-                      <Stack
-                        alignItems="center"
-                        spacing={0.5}
-                        onClick={(e) => e.stopPropagation()} // Stop clicking card trigger
-                        sx={{ bgcolor: "rgba(255,255,255,0.01)", px: 1, py: 1.5, borderRadius: "10px" }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleQueryVote(q._id, true)}
-                          sx={{ color: hasUpvoted ? "primary.main" : "text.secondary", p: 0.5 }}
-                        >
-                          <ThumbUp sx={{ fontSize: 14 }} />
-                        </IconButton>
-                        <Typography variant="caption" fontWeight={900} color="text.primary">
-                          {votesCount}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleQueryVote(q._id, false)}
-                          sx={{ color: hasDownvoted ? "error.main" : "text.secondary", p: 0.5 }}
-                        >
-                          <ThumbDown sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Stack>
-
-                      {/* Main Title & body snippet */}
-                      <Box sx={{ flexGrow: 1 }}>
+                    {/* Main Title & body snippet */}
+                    <Box sx={{ width: "100%" }}>
                         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
                           <Typography variant="subtitle1" fontWeight={850} color="text.primary" sx={{ lineHeight: 1.3 }}>
                             {q.title}
                           </Typography>
-                          {q.acceptedAnswer && (
+                          {isSolved && (
                             <Chip
                               icon={<CheckCircle sx={{ fontSize: "11px !important", color: "#10B981" }} />}
                               label="Solved"
@@ -928,6 +1578,20 @@ export default function QueriesPage() {
                                 height: 20,
                                 bgcolor: "rgba(16, 185, 129, 0.12)",
                                 color: "#10B981",
+                                fontWeight: 800,
+                                fontSize: "0.6rem",
+                              }}
+                            />
+                          )}
+                          {q.isPinned && (
+                            <Chip
+                              icon={<PushPin sx={{ fontSize: "11px !important", color: "#6366F1", transform: "rotate(45deg)" }} />}
+                              label="Pinned"
+                              size="small"
+                              sx={{
+                                height: 20,
+                                bgcolor: "rgba(99, 102, 241, 0.12)",
+                                color: "#818CF8",
                                 fontWeight: 800,
                                 fontSize: "0.6rem",
                               }}
@@ -952,6 +1616,37 @@ export default function QueriesPage() {
                           {q.description}
                         </Typography>
 
+                        {/* Verified Answer Highlight Box */}
+                        {q.acceptedAnswer && typeof q.acceptedAnswer === "object" && q.acceptedAnswer.content && (
+                          <Box
+                            sx={{
+                              mb: 2.5,
+                              p: 2,
+                              borderRadius: "12px",
+                              bgcolor: "rgba(16, 185, 129, 0.03)",
+                              border: "1px solid rgba(16, 185, 129, 0.12)",
+                              display: "flex",
+                              gap: 1.5,
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <School sx={{ fontSize: 16, color: "#10B981", mt: 0.2 }} />
+                            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
+                                <Typography variant="caption" fontWeight={800} color="#10B981" sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.58rem" }}>
+                                  Verified Solution
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.6rem", fontFamily: "monospace" }}>
+                                  {q.acceptedAnswer.author?.firstName} {q.acceptedAnswer.author?.lastName}
+                                </Typography>
+                              </Stack>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {q.acceptedAnswer.content}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+
                         {/* Card metadata bar */}
                         <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
                           {/* Tags */}
@@ -963,26 +1658,28 @@ export default function QueriesPage() {
                                 size="small"
                                 sx={{
                                   height: 20,
-                                  bgcolor: "rgba(79, 70, 229, 0.05)",
-                                  color: "primary.light",
+                                  bgcolor: "rgba(255, 255, 255, 0.04)",
+                                  color: "text.secondary",
                                   fontWeight: 700,
                                   fontSize: "0.65rem",
+                                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                                  borderRadius: "4px",
                                 }}
                               />
                             ))}
                           </Stack>
 
                           {/* Author Attribution Card */}
-                          <Stack direction="row" spacing={2.5} alignItems="center">
+                          <Stack direction="row" spacing={2} alignItems="center">
                             <Stack direction="row" spacing={1} alignItems="center">
                               <Avatar
                                 src={q.author?.photo ? `${apiBase}/uploads/${q.author.photo}` : undefined}
-                                sx={{ width: 22, height: 22 }}
+                                sx={{ width: 24, height: 24, border: "1px solid rgba(255,255,255,0.06)" }}
                               >
                                 {q.author?.firstName?.[0]}
                               </Avatar>
                               <Box>
-                                <Typography variant="caption" fontWeight={800} color="text.primary" sx={{ fontSize: "0.75rem" }}>
+                                <Typography variant="caption" fontWeight={850} color="text.primary" sx={{ fontSize: "0.72rem" }}>
                                   {q.author?.firstName} {q.author?.lastName}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.58rem", mt: -0.4 }}>
@@ -993,20 +1690,162 @@ export default function QueriesPage() {
 
                             <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.06)" }} />
 
-                            <Stack direction="row" spacing={0.6} alignItems="center" sx={{ color: "text.secondary" }}>
-                              <CommentIcon sx={{ fontSize: 13 }} />
-                              <Typography variant="caption" fontWeight={750}>
-                                {q.answersCount || 0}
+                            {/* EXPLICIT LIKE / DISLIKE BUTTONS */}
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              onClick={(e) => e.stopPropagation()} // stop click card detail navigation
+                              sx={{
+                                bgcolor: "rgba(255, 255, 255, 0.02)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                                borderRadius: "8px",
+                                p: 0.3,
+                              }}
+                            >
+                              <Button
+                                size="small"
+                                onClick={() => handleQueryVote(q._id, true)}
+                                startIcon={<ThumbUp sx={{ fontSize: 11 }} />}
+                                sx={{
+                                  textTransform: "none",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                  color: hasUpvoted ? "#10B981" : "text.secondary",
+                                  bgcolor: hasUpvoted ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                                  border: "1px solid",
+                                  borderColor: hasUpvoted ? "rgba(16, 185, 129, 0.3)" : "transparent",
+                                  borderRadius: "6px",
+                                  minWidth: "unset",
+                                  px: 1.5,
+                                  py: 0.2,
+                                  "&:hover": {
+                                    bgcolor: "rgba(16, 185, 129, 0.1)",
+                                    color: "#10B981",
+                                  },
+                                }}
+                              >
+                                {q.upvotes?.length || 0}
+                              </Button>
+                              <Box sx={{ width: "1px", height: 12, bgcolor: "rgba(255,255,255,0.08)", mx: 0.5 }} />
+                              <Button
+                                size="small"
+                                onClick={() => handleQueryVote(q._id, false)}
+                                startIcon={<ThumbDown sx={{ fontSize: 11 }} />}
+                                sx={{
+                                  textTransform: "none",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                  color: hasDownvoted ? "#F43F5E" : "text.secondary",
+                                  bgcolor: hasDownvoted ? "rgba(244, 63, 94, 0.15)" : "transparent",
+                                  border: "1px solid",
+                                  borderColor: hasDownvoted ? "rgba(244, 63, 94, 0.3)" : "transparent",
+                                  borderRadius: "6px",
+                                  minWidth: "unset",
+                                  px: 1.5,
+                                  py: 0.2,
+                                  "&:hover": {
+                                    bgcolor: "rgba(244, 63, 94, 0.1)",
+                                    color: "#F43F5E",
+                                  },
+                                }}
+                              >
+                                {q.downvotes?.length || 0}
+                              </Button>
+                            </Stack>
+
+                            <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.06)" }} />
+
+                            <Stack
+                              direction="row"
+                              spacing={0.8}
+                              alignItems="center"
+                              sx={{
+                                color: "text.secondary",
+                                bgcolor: "rgba(255,255,255,0.02)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                                borderRadius: "8px",
+                                px: 1.5,
+                                py: 0.5,
+                              }}
+                            >
+                              <CommentIcon sx={{ fontSize: 12 }} />
+                              <Typography variant="caption" fontWeight={750} sx={{ fontSize: "0.68rem" }}>
+                                {q.answersCount || 0} answers
                               </Typography>
                             </Stack>
 
                             <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
                               {formatRelativeTime(q.createdAt)}
                             </Typography>
+
+                            {/* Pin Query Button (list view) */}
+                            {canModerate && sameCollege(q.college) && (
+                              <Box onClick={(e) => e.stopPropagation()}>
+                                <Tooltip title={q.isPinned ? "Unpin Question" : "Pin Question"}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handlePinQuery(q._id)}
+                                    sx={{
+                                      color: q.isPinned ? "primary.main" : "text.secondary",
+                                      bgcolor: q.isPinned ? "rgba(99, 102, 241, 0.1)" : "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.06)",
+                                      p: 0.5,
+                                      "&:hover": { bgcolor: "rgba(99, 102, 241, 0.15)" },
+                                    }}
+                                  >
+                                    <PushPin sx={{ fontSize: 13, transform: q.isPinned ? "rotate(45deg)" : "none" }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
+
+                            {/* Delete Query Button (list view) */}
+                            {(q.author?._id === user._id ||
+                              isSuperAdmin ||
+                              (isCollegeAdmin && sameCollege(q.college)) ||
+                              (isModerator && sameCollege(q.college))) && (
+                              <Box onClick={(e) => e.stopPropagation()}>
+                                <Tooltip title="Delete Question">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteQuery(q._id)}
+                                    sx={{
+                                      color: "error.main",
+                                      bgcolor: "rgba(244, 63, 94, 0.05)",
+                                      border: "1px solid rgba(244, 63, 94, 0.15)",
+                                      p: 0.5,
+                                      "&:hover": { bgcolor: "rgba(244, 63, 94, 0.15)" },
+                                    }}
+                                  >
+                                    <Delete sx={{ fontSize: 13 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
+
+                            {/* Report Query Button (list view) */}
+                            {q.author?._id !== user._id && (
+                              <Box onClick={(e) => e.stopPropagation()}>
+                                <Tooltip title="Report Question">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleReportQuery(q._id)}
+                                    sx={{
+                                      color: "warning.main",
+                                      bgcolor: "rgba(245, 158, 11, 0.05)",
+                                      border: "1px solid rgba(245, 158, 11, 0.15)",
+                                      p: 0.5,
+                                      "&:hover": { bgcolor: "rgba(245, 158, 11, 0.15)" },
+                                    }}
+                                  >
+                                    <Flag sx={{ fontSize: 13 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
                           </Stack>
                         </Stack>
                       </Box>
-                    </Stack>
                   </Paper>
                 );
               })}
@@ -1045,103 +1884,237 @@ export default function QueriesPage() {
         sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}
       >
         <Paper
-          elevation={24}
+          elevation={0}
           sx={{
             width: "100%",
-            maxWidth: 600,
-            bgcolor: "#0F172A",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            p: 4,
-            maxHeight: "90vh",
+            maxWidth: 620,
+            bgcolor: "#0B1120",
+            border: "1px solid rgba(255, 255, 255, 0.10)",
+            borderRadius: "20px",
+            overflow: "hidden",
+            maxHeight: "92vh",
             overflowY: "auto",
           }}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-            <Typography variant="h6" fontWeight={900} color="text.primary">
-              Ask a Campus Question
-            </Typography>
-            <IconButton onClick={() => setAskModalOpen(false)} sx={{ color: "text.secondary" }}>
-              <Close />
-            </IconButton>
-          </Stack>
-
-          <Box component="form" onSubmit={handleAskSubmit}>
-            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ mb: 1, display: "block" }}>
-              Question Title
-            </Typography>
-            <TextField
-              placeholder="e.g. What is the weightage of End-Semester Exams in PH101?"
-              fullWidth
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              sx={{
-                mb: 3,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "8px",
-                  bgcolor: "rgba(255, 255, 255, 0.01)",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-
-            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ mb: 1, display: "block" }}>
-              Detailed Description
-            </Typography>
-            <TextField
-              placeholder="Provide context, links, or specific parts you need help with..."
-              fullWidth
-              multiline
-              rows={6}
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              sx={{
-                mb: 3,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "8px",
-                  bgcolor: "rgba(255, 255, 255, 0.01)",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-
-            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ mb: 1, display: "block" }}>
-              Categorization Tags (comma separated)
-            </Typography>
-            <TextField
-              placeholder="e.g. exams, physics, IITDelhi"
-              fullWidth
-              value={newTags}
-              onChange={(e) => setNewTags(e.target.value)}
-              sx={{
-                mb: 4,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "8px",
-                  bgcolor: "rgba(255, 255, 255, 0.01)",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button onClick={() => setAskModalOpen(false)} sx={{ color: "text.secondary", textTransform: "none", fontWeight: 700 }}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={submittingQuery}
+          {/* Modal Header */}
+          <Box
+            sx={{
+              px: 4,
+              pt: 4,
+              pb: 3,
+              background: "linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(236, 72, 153, 0.06) 100%)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "10px",
+                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
+                  }}
+                >
+                  <HelpOutline sx={{ fontSize: 18, color: "#fff" }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={800} color="text.primary" sx={{ lineHeight: 1.2 }}>
+                    Ask a Campus Question
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
+                    Get verified answers from peers & faculty
+                  </Typography>
+                </Box>
+              </Stack>
+              <IconButton
+                onClick={() => setAskModalOpen(false)}
+                size="small"
                 sx={{
-                  borderRadius: "30px",
-                  textTransform: "none",
-                  fontWeight: 750,
-                  px: 4,
-                  background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)",
+                  color: "text.secondary",
+                  bgcolor: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.08)" },
                 }}
               >
-                {submittingQuery ? "Posting..." : "Post Question"}
-              </Button>
+                <Close sx={{ fontSize: 16 }} />
+              </IconButton>
             </Stack>
+          </Box>
+
+          {/* Modal Body */}
+          <Box component="form" onSubmit={handleAskSubmit} sx={{ px: 4, py: 3.5 }}>
+
+            {/* Question Title */}
+            <Box sx={{ mb: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.8 }}>
+                <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontSize: "0.78rem" }}>
+                  Question Title <Box component="span" sx={{ color: "error.main" }}>*</Box>
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
+                  Be specific and clear
+                </Typography>
+              </Stack>
+              <TextField
+                placeholder="e.g. What is the B.Tech CSE semester fee installment schedule?"
+                fullWidth
+                required
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px",
+                    bgcolor: "rgba(255, 255, 255, 0.03)",
+                    fontSize: "0.88rem",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.08)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.14)" },
+                    "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+                  },
+                  "& .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.25)", opacity: 1 },
+                }}
+              />
+            </Box>
+
+            {/* Description */}
+            <Box sx={{ mb: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.8 }}>
+                <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontSize: "0.78rem" }}>
+                  Detailed Description <Box component="span" sx={{ color: "error.main" }}>*</Box>
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
+                  Include context, course codes, or docs
+                </Typography>
+              </Stack>
+              <TextField
+                placeholder="Describe your question in detail. What have you already tried? Any relevant info like semester, course code, or department..."
+                fullWidth
+                required
+                multiline
+                rows={5}
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px",
+                    bgcolor: "rgba(255, 255, 255, 0.03)",
+                    fontSize: "0.85rem",
+                    alignItems: "flex-start",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.08)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.14)" },
+                    "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+                  },
+                  "& .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.25)", opacity: 1 },
+                }}
+              />
+            </Box>
+
+            {/* Category Tag */}
+            <Box sx={{ mb: 4 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.8 }}>
+                <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ fontSize: "0.78rem" }}>
+                  Category / Topic Tag
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem" }}>
+                  Helps others find your question faster
+                </Typography>
+              </Stack>
+              <Select
+                fullWidth
+                value={newTags}
+                onChange={(e) => setNewTags(e.target.value)}
+                sx={{
+                  borderRadius: "10px",
+                  bgcolor: "rgba(255, 255, 255, 0.03)",
+                  fontSize: "0.85rem",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.08)" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.14)" },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#6366F1" },
+                  "& .MuiSelect-icon": { color: "text.secondary" },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: "#0F172A",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "10px",
+                      mt: 0.5,
+                    },
+                  },
+                }}
+              >
+                {[
+                  { value: "general", label: "💬 General", desc: "General questions & discussions" },
+                  { value: "fees", label: "💰 Fees & Finance", desc: "Fee structure, scholarships, payments" },
+                  { value: "exams", label: "📝 Exams & Academics", desc: "Exam schedules, syllabus, results" },
+                  { value: "placements", label: "💼 Placements & Careers", desc: "Campus placements, internships" },
+                  { value: "tech", label: "💻 Technology & Projects", desc: "Coding, tech stacks, projects" },
+                  { value: "hostellife", label: "🏠 Hostel & Campus Life", desc: "Hostel, mess, events, sports" },
+                  { value: "academics", label: "🎓 Courses & Faculty", desc: "Subject queries, faculty info" },
+                ].map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value} sx={{ py: 1.5 }}>
+                    <Box>
+                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: "0.82rem" }}>{opt.label}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem" }}>{opt.desc}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            {/* Footer Actions */}
+            <Box
+              sx={{
+                pt: 3,
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+              }}
+            >
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.68rem" }}>
+                Your question will be visible to your campus community.
+              </Typography>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Button
+                  onClick={() => setAskModalOpen(false)}
+                  sx={{
+                    color: "text.secondary",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    px: 2,
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={submittingQuery || !newTitle.trim() || !newDescription.trim()}
+                  startIcon={submittingQuery ? null : <Send sx={{ fontSize: 14 }} />}
+                  sx={{
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    fontWeight: 700,
+                    px: 3,
+                    py: 1,
+                    fontSize: "0.82rem",
+                    background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
+                    "&:hover": { boxShadow: "0 6px 20px rgba(79, 70, 229, 0.5)" },
+                    "&.Mui-disabled": { opacity: 0.45, background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)", color: "#fff" },
+                  }}
+                >
+                  {submittingQuery ? "Posting..." : "Post Question"}
+                </Button>
+              </Stack>
+            </Box>
           </Box>
         </Paper>
       </Modal>

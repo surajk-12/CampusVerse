@@ -34,7 +34,6 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
 
 const CATEGORIES = ["All", "Tech", "Cultural", "Sports"];
 const TIME_FILTERS = [
@@ -56,7 +55,6 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [timeFilter, setTimeFilter] = useState("upcoming");
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Create Event Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -199,9 +197,6 @@ export default function EventsPage() {
 
   // Filter local events based on search query
   const filteredEvents = events.filter((ev) => {
-    const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(ev._id);
-    if (!isAiMatched) return false;
-
     const titleMatch = ev.title.toLowerCase().includes(searchQuery.toLowerCase());
     const descMatch = ev.description.toLowerCase().includes(searchQuery.toLowerCase());
     const collegeMatch = ev.organizingCollege?.collegeName?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -256,12 +251,7 @@ export default function EventsPage() {
       <Grid container spacing={3}>
         {/* Left Column: Discover Events */}
         <Grid size={{ xs: 12, md: 8 }}>
-          {/* AI Search Assistant */}
-          <AiCopilot
-            type="events"
-            data={events}
-            onAiFilter={(ids) => setAiFilteredIds(ids)}
-          />
+
 
           {/* Filtering toolbar */}
           <Paper

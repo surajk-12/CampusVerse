@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AISearchInput from "../components/AISearchInput.jsx";
 import {
   Box,
   Typography,
@@ -18,6 +19,7 @@ import {
   FormControl,
   InputLabel,
   InputAdornment,
+  Tooltip,
 } from "@mui/material";
 import {
   School,
@@ -30,11 +32,14 @@ import {
   CalendarMonth,
   Person,
   SmartToy,
+  Verified,
+  Delete,
+  Flag,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
+import useRole from "../hooks/useRole.js";
 
 const DEPARTMENTS = [
   "All",
@@ -56,6 +61,7 @@ const FORM_YEARS = YEARS.filter((y) => y !== "All");
 export default function NotesPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isSuperAdmin, isCollegeAdmin, isModerator, canModerate, sameCollege } = useRole();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api");
 
   const [resources, setResources] = useState([]);
@@ -66,7 +72,6 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("All");
   const [selectedYear, setSelectedYear] = useState("All");
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Upload Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,6 +109,16 @@ export default function NotesPage() {
     if (aiSearchVal) {
       setSearchQuery(aiSearchVal);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleAIFilter = (e) => {
+      if (e.detail?.searchString) {
+        setSearchQuery(e.detail.searchString);
+      }
+    };
+    window.addEventListener("ai-filter", handleAIFilter);
+    return () => window.removeEventListener("ai-filter", handleAIFilter);
   }, []);
 
   useEffect(() => {
@@ -188,6 +203,44 @@ export default function NotesPage() {
     }
   };
 
+  // Delete Resource Note
+  const handleDeleteResource = async (resourceId) => {
+    if (!window.confirm("Are you sure you want to delete this resource note? This cannot be undone.")) return;
+    try {
+      await api.delete(`/resources/${resourceId}`);
+      showToast("Academic document deleted successfully.", "success");
+      setResources((prev) => prev.filter((r) => r._id !== resourceId));
+    } catch (err) {
+      console.error("Error deleting notes:", err);
+      showToast(err.response?.data?.message || "Failed to delete notes.", "error");
+    }
+  };
+
+  // Toggle Verify Resource
+  const handleVerifyResource = async (resourceId) => {
+    try {
+      const { data } = await api.put(`/resources/${resourceId}/verify`);
+      showToast(data.message, "success");
+      setResources((prev) =>
+        prev.map((r) => (r._id === resourceId ? { ...r, isVerified: data.isVerified } : r))
+      );
+    } catch (err) {
+      console.error("Error verifying notes:", err);
+      showToast(err.response?.data?.message || "Failed to verify note document.", "error");
+    }
+  };
+
+  // Report Resource
+  const handleReportResource = async (resourceId) => {
+    try {
+      await api.post(`/resources/${resourceId}/report`);
+      showToast("Academic resource reported for review.", "success");
+    } catch (err) {
+      console.error("Error reporting notes:", err);
+      showToast(err.response?.data?.message || "You have already reported this document.", "info");
+    }
+  };
+
   // Format File Size
   const formatBytes = (bytes, decimals = 1) => {
     if (!bytes) return "0 Bytes";
@@ -198,9 +251,7 @@ export default function NotesPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
 
-  const resourcesToDisplay = aiFilteredIds
-    ? resources.filter((res) => aiFilteredIds.includes(res._id))
-    : resources;
+
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
@@ -235,12 +286,7 @@ export default function NotesPage() {
         </Button>
       </Stack>
 
-      {/* AI Copilot Search Bar */}
-      <AiCopilot
-        type="notes"
-        data={resources}
-        onAiFilter={(ids) => setAiFilteredIds(ids)}
-      />
+
 
       {/* Filter toolbar */}
       <Paper
@@ -260,27 +306,25 @@ export default function NotesPage() {
         }}
       >
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ flexGrow: 1 }}>
-          <TextField
-            placeholder="Search subject code, code or tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            sx={{
-              minWidth: { sm: 260 },
-              "& .MuiOutlinedInput-root": {
-                background: "rgba(255, 255, 255, 0.02)",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.06)",
-                "& fieldset": { border: "none" },
-              },
+          <AISearchInput
+            placeholder="Ask AI or search notes..."
+            context="notes"
+            onFilterApply={(res) => {
+              setSearchQuery(res.search || "");
+              if (res.department) {
+                const exists = DEPARTMENTS.some(d => d.toLowerCase() === res.department.toLowerCase());
+                if (exists) {
+                  setSelectedDept(DEPARTMENTS.find(d => d.toLowerCase() === res.department.toLowerCase()));
+                }
+              }
+              if (res.year) {
+                const exists = YEARS.some(y => y.toLowerCase() === res.year.toLowerCase());
+                if (exists) {
+                  setSelectedYear(YEARS.find(y => y.toLowerCase() === res.year.toLowerCase()));
+                }
+              }
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: "text.secondary", fontSize: 18 }} />
-                </InputAdornment>
-              ),
-            }}
+            sx={{ minWidth: { sm: 260 } }}
           />
 
           <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -368,28 +412,9 @@ export default function NotesPage() {
             Be the first to upload and share study assets with classmates!
           </Typography>
         </Paper>
-      ) : resourcesToDisplay.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: "center",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(30, 41, 59, 0.15)",
-            borderRadius: "16px",
-          }}
-        >
-          <SmartToy sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
-          <Typography variant="body1" fontWeight={750} color="text.secondary">
-            No notes found matching the AI filters.
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-            Try adjusting your natural language query or clearing the AI filter.
-          </Typography>
-        </Paper>
       ) : (
         <Grid container spacing={3}>
-          {resourcesToDisplay.map((res) => {
+          {resources.map((res) => {
             const uploaderName = res.uploadedBy
               ? `${res.uploadedBy.firstName} ${res.uploadedBy.lastName}`
               : "Uploader";
@@ -422,19 +447,37 @@ export default function NotesPage() {
                   <Box>
                     {/* Top Row: Course Code & Year */}
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                      <Chip
-                        label={res.subjectCode}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.65rem",
-                          fontWeight: 800,
-                          bgcolor: "rgba(79, 70, 229, 0.12)",
-                          color: "#818CF8",
-                          border: "1px solid rgba(79, 70, 229, 0.2)",
-                          borderRadius: "4px",
-                        }}
-                      />
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip
+                          label={res.subjectCode}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.65rem",
+                            fontWeight: 800,
+                            bgcolor: "rgba(79, 70, 229, 0.12)",
+                            color: "#818CF8",
+                            border: "1px solid rgba(79, 70, 229, 0.2)",
+                            borderRadius: "4px",
+                          }}
+                        />
+                        {res.isVerified && (
+                          <Chip
+                            icon={<Verified sx={{ fontSize: "11px !important", color: "#10B981" }} />}
+                            label="Verified"
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.65rem",
+                              fontWeight: 800,
+                              bgcolor: "rgba(16, 185, 129, 0.12)",
+                              color: "#10B981",
+                              border: "1px solid rgba(16, 185, 129, 0.25)",
+                              borderRadius: "4px",
+                            }}
+                          />
+                        )}
+                      </Stack>
                       <Typography variant="caption" color="text.secondary" fontWeight={600}>
                         {res.year}
                       </Typography>
@@ -499,23 +542,81 @@ export default function NotesPage() {
                         </Box>
                       </Stack>
 
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<Download sx={{ fontSize: 12 }} />}
-                        onClick={() => handleDownload(res._id, res.fileName)}
-                        sx={{
-                          borderRadius: "8px",
-                          height: 28,
-                          textTransform: "none",
-                          fontWeight: 700,
-                          fontSize: "0.72rem",
-                          px: 1.8,
-                          background: "linear-gradient(135deg, #4F46E5 0%, #818CF8 100%)",
-                        }}
-                      >
-                        Download
-                      </Button>
+                      <Stack direction="row" spacing={0.8} alignItems="center">
+                        {/* Verify button */}
+                        {canModerate && sameCollege(res.college) && (
+                          <Tooltip title={res.isVerified ? "Remove Verification" : "Verify Document"}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleVerifyResource(res._id)}
+                              sx={{
+                                color: res.isVerified ? "#10B981" : "text.secondary",
+                                bgcolor: res.isVerified ? "rgba(16, 185, 129, 0.08)" : "rgba(255,255,255,0.03)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                                "&:hover": { bgcolor: "rgba(16, 185, 129, 0.15)" },
+                              }}
+                            >
+                              <Verified sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+
+                        {/* Report button */}
+                        {res.uploadedBy?._id !== user._id && (
+                          <Tooltip title="Report Document">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleReportResource(res._id)}
+                              sx={{
+                                color: "warning.main",
+                                bgcolor: "rgba(245, 158, 11, 0.05)",
+                                border: "1px solid rgba(245, 158, 11, 0.15)",
+                                "&:hover": { bgcolor: "rgba(245, 158, 11, 0.15)" },
+                              }}
+                            >
+                              <Flag sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+
+                        {/* Delete button */}
+                        {(res.uploadedBy?._id === user._id ||
+                          isSuperAdmin ||
+                          (canModerate && sameCollege(res.college))) && (
+                          <Tooltip title="Delete Document">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteResource(res._id)}
+                              sx={{
+                                color: "error.main",
+                                bgcolor: "rgba(244, 63, 94, 0.05)",
+                                border: "1px solid rgba(244, 63, 94, 0.15)",
+                                "&:hover": { bgcolor: "rgba(244, 63, 94, 0.15)" },
+                              }}
+                            >
+                              <Delete sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<Download sx={{ fontSize: 12 }} />}
+                          onClick={() => handleDownload(res._id, res.fileName)}
+                          sx={{
+                            borderRadius: "8px",
+                            height: 28,
+                            textTransform: "none",
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            px: 1.8,
+                            background: "linear-gradient(135deg, #4F46E5 0%, #818CF8 100%)",
+                          }}
+                        >
+                          Download
+                        </Button>
+                      </Stack>
                     </Stack>
                   </Box>
                 </Paper>

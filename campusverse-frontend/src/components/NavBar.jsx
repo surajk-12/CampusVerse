@@ -20,8 +20,6 @@ export default function NavBar() {
   const nav = useNavigate();
   const location = useLocation();
 
-  // track current tab by path
-  const [tab, setTab] = useState("home");
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -32,16 +30,17 @@ export default function NavBar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (location.pathname.startsWith("/dashboard")) setTab("dashboard");
-    else if (location.pathname === "/login") setTab("login");
-    else if (location.pathname === "/register") setTab("register");
-    else setTab("home");
-  }, [location.pathname]);
-
-  const handleChange = (event, newValue) => {
-    setTab(newValue);
-    nav(newValue === "home" ? "/" : `/${newValue}`);
+  const handleNavClick = (anchorId) => {
+    if (location.pathname !== "/") {
+      nav("/");
+      setTimeout(() => {
+        const el = document.getElementById(anchorId);
+        el?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    } else {
+      const el = document.getElementById(anchorId);
+      el?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   const publicPaths = ["/", "/login", "/register", "/register/student"];
@@ -115,40 +114,79 @@ export default function NavBar() {
             </Typography>
           </Box>
 
-          {/* Center Tabs Navigation */}
-          <Tabs
-            value={tab}
-            onChange={handleChange}
-            textColor="inherit"
-            indicatorColor="primary"
-            sx={{
-              display: { xs: "none", sm: "flex" },
-              height: "100%",
-              "& .MuiTabs-indicator": {
-                height: 3,
-                borderRadius: "3px 3px 0 0",
-                background: "linear-gradient(90deg, #4F46E5 0%, #EC4899 100%)",
-              },
-              "& .MuiTab-root": {
+          {/* Center Navigation Links (Public) */}
+          <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 1 }}>
+            <Button
+              onClick={() => handleNavClick("features")}
+              sx={{
+                color: "rgba(255, 255, 255, 0.65)",
                 textTransform: "none",
                 fontWeight: 600,
-                fontSize: "0.9rem",
-                color: "rgba(255, 255, 255, 0.6)",
-                minWidth: 90,
-                transition: "color 0.2s",
-                "&.Mui-selected": {
-                  color: "#FFFFFF",
-                },
-                "&:hover": {
-                  color: "#FFFFFF",
-                },
-              },
-            }}
-          >
-            <Tab label="Home" value="home" />
-            {!user && <Tab label="Login" value="login" />}
-            {user && <Tab label="Dashboard" value="dashboard" />}
-          </Tabs>
+                fontSize: "0.88rem",
+                borderRadius: "8px",
+                px: 2,
+                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
+              }}
+            >
+              Features
+            </Button>
+            <Button
+              onClick={() => handleNavClick("how-it-works")}
+              sx={{
+                color: "rgba(255, 255, 255, 0.65)",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                borderRadius: "8px",
+                px: 2,
+                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
+              }}
+            >
+              How It Works
+            </Button>
+            <Button
+              onClick={() => handleNavClick("college-search-hero")}
+              sx={{
+                color: "rgba(255, 255, 255, 0.65)",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                borderRadius: "8px",
+                px: 2,
+                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
+              }}
+            >
+              Find Campus
+            </Button>
+            <Button
+              onClick={() => handleNavClick("why-choose-us")}
+              sx={{
+                color: "rgba(255, 255, 255, 0.65)",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                borderRadius: "8px",
+                px: 2,
+                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
+              }}
+            >
+              About
+            </Button>
+            <Button
+              onClick={() => handleNavClick("faq")}
+              sx={{
+                color: "rgba(255, 255, 255, 0.65)",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                borderRadius: "8px",
+                px: 2,
+                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
+              }}
+            >
+              FAQ
+            </Button>
+          </Box>
 
           {/* Right side Actions */}
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>

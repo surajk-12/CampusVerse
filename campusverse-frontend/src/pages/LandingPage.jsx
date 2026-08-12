@@ -1,801 +1,483 @@
-import { useState, useEffect, useRef } from "react";
-import {
-  Container,
-  Typography,
-  Button,
-  Grid,
-  Box,
-  Card,
-  CardContent,
-  Stack,
-  Autocomplete,
-  TextField,
-  CircularProgress,
-  Chip,
-  InputAdornment,
-} from "@mui/material";
-import {
-  School,
-  People,
-  Forum,
-  ArrowForward,
-  Search,
-  LocationOn,
-  Security,
-  Bolt,
-  Info,
-  ChevronRight,
-} from "@mui/icons-material";
+import { useState, useEffect } from "react";
 import api from "../api/axios.js";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext.jsx";
 
-const LandingPage = () => {
-  const [colleges, setColleges] = useState([]);
-  const [selectedCollege, setSelectedCollege] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-  const selectionRef = useRef(null);
+/* ─────────────── Seed / Mock Data ─────────────── */
+const SAMPLE_COLLEGES = [
+  { _id: "mock-nehru", collegeName: "Nehru College",   city: "New Delhi", state: "Delhi",       students: 4200  },
+  { _id: "mock-qwe",   collegeName: "QWE College",     city: "Mumbai",    state: "Maharashtra", students: 2800  },
+  { _id: "mock-du",    collegeName: "Delhi University", city: "Delhi",     state: "Delhi",       students: 12500 },
+  { _id: "mock-iitb",  collegeName: "IIT Bombay",      city: "Mumbai",    state: "Maharashtra", students: 8900  },
+  { _id: "mock-mit",   collegeName: "MIT Engineering",  city: "Pune",      state: "Maharashtra", students: 3100  },
+];
 
-  useEffect(() => {
-    const fetchColleges = async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get("/colleges");
-        if (Array.isArray(data)) {
-          setColleges(data);
-        } else if (Array.isArray(data.colleges)) {
-          setColleges(data.colleges);
-        } else {
-          setColleges([]);
-          setError("Could not parse college data.");
-        }
-      } catch (err) {
-        console.error("Failed to fetch colleges", err);
-        setError("Failed to load colleges. Please try again later.");
-        setColleges([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchColleges();
-  }, []);
-
-  const handleCollegeSelect = (event, value) => {
-    setSelectedCollege(value);
-  };
-
-  const handleProceed = () => {
-    if (!selectedCollege) {
-      showToast("Please select your college first!", "warning");
-      return;
-    }
-
-    navigate("/register/student", {
-      state: {
-        college: selectedCollege._id,
-        collegeName: selectedCollege.collegeName || selectedCollege.name,
-        collegeLocation: selectedCollege.city || selectedCollege.location,
-      },
-    });
-  };
-
-  const handleExploreDirectory = () => {
-    if (!selectedCollege) return;
-    navigate(`/colleges/${selectedCollege._id}/students`, {
-      state: {
-        collegeId: selectedCollege._id,
-        collegeName: selectedCollege.collegeName || selectedCollege.name,
-      },
-    });
-  };
-
-  const handleScrollToSelection = () => {
-    selectionRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Select some popular/sample colleges to display as fast-click chips
-  const popularColleges = colleges.slice(0, 4);
-
-  return (
-    <Box
-      sx={{
-        bgcolor: "#0B0F19", // Deep space dark background
-        minHeight: "100vh",
-        color: "#ffffff",
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
-      {/* ─── Ambient Glow Blobs ─── */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: "10%",
-          left: "-10%",
-          width: "600px",
-          height: "600px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(79,70,229,0.15) 0%, rgba(0,0,0,0) 70%)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          top: "40%",
-          right: "-10%",
-          width: "500px",
-          height: "500px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, rgba(0,0,0,0) 70%)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: "10%",
-          left: "20%",
-          width: "700px",
-          height: "700px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(16,185,129,0.08) 0%, rgba(0,0,0,0) 70%)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* ─── Hero Section ─── */}
-      <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 15 }, pb: { xs: 8, md: 12 }, position: "relative", zIndex: 1 }}>
-        <Grid container spacing={6} alignItems="center">
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Box
-              sx={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 1,
-                bgcolor: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "100px",
-                px: 2,
-                py: 0.75,
-                mb: 3,
-              }}
-            >
-              <Chip
-                label="New"
-                size="small"
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  fontSize: "0.75rem",
-                  height: 20,
-                }}
-              />
-              <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.8)", fontWeight: 500 }}>
-                A modern platform built exclusively for students
-              </Typography>
-            </Box>
-
-            <Typography
-              variant="h1"
-              sx={{
-                fontSize: { xs: "2.8rem", sm: "3.8rem", md: "4.5rem" },
-                fontWeight: 900,
-                lineHeight: 1.1,
-                letterSpacing: "-0.03em",
-                mb: 3,
-                color: "#FFFFFF",
-              }}
-            >
-              Step into the <br />
-              <Box
-                component="span"
-                sx={{
-                  background: "linear-gradient(135deg, #818CF8 0%, #C084FC 50%, #EC4899 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  display: "inline-block",
-                }}
-              >
-                CampusVerse
-              </Box>
-            </Typography>
-
-            <Typography
-              variant="h6"
-              sx={{
-                color: "rgba(241, 245, 249, 0.75)",
-                fontWeight: 400,
-                lineHeight: 1.6,
-                mb: 5,
-                maxWidth: "600px",
-                fontSize: { xs: "1rem", md: "1.15rem" },
-              }}
-            >
-              Connect with peers, search student directories, request connection approvals, and collaborate within a verified, safe, and exclusive collegiate network.
-            </Typography>
-
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5}>
-              <Button
-                variant="contained"
-                size="large"
-                endIcon={<ArrowForward />}
-                onClick={handleScrollToSelection}
-                sx={{
-                  background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
-                  boxShadow: "0 10px 20px -5px rgba(79, 70, 229, 0.4)",
-                  px: 4,
-                  py: 1.8,
-                  fontSize: "1rem",
-                  borderRadius: "14px",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #4338CA 0%, #4F46E5 100%)",
-                    transform: "translateY(-2px)",
-                  },
-                }}
-              >
-                Find My Campus
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate("/login")}
-                sx={{
-                  color: "#FFFFFF",
-                  borderColor: "rgba(255, 255, 255, 0.2)",
-                  px: 4,
-                  py: 1.8,
-                  fontSize: "1rem",
-                  borderRadius: "14px",
-                  backdropFilter: "blur(10px)",
-                  "&:hover": {
-                    borderColor: "#FFFFFF",
-                    bgcolor: "rgba(255, 255, 255, 0.05)",
-                    transform: "translateY(-2px)",
-                  },
-                }}
-              >
-                Sign In to Dashboard
-              </Button>
-            </Stack>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 5 }} sx={{ display: { xs: "none", md: "block" } }}>
-            {/* Visual Glassmorphic Mockup Cards */}
-            <Box sx={{ position: "relative", height: "450px" }}>
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "10%",
-                  left: "10%",
-                  width: "320px",
-                  background: "rgba(30, 41, 59, 0.45)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                  borderRadius: "24px",
-                  p: 3,
-                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
-                  transform: "rotate(-4deg)",
-                  zIndex: 2,
-                }}
-              >
-                <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: "14px",
-                      bgcolor: "primary.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ffffff",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    CV
-                  </Box>
-                  <Box>
-                    <Typography fontWeight="bold" sx={{ color: "#F1F5F9" }}>
-                      Active Directory
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.5)" }}>
-                      Real-time peer matches
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                  {[
-                    { name: "Aarav Mehta", course: "B.Tech CSE", status: "Connected", code: "AC" },
-                    { name: "Sneha Reddy", course: "B.Sc Physics", status: "Request Sent", code: "SR" },
-                  ].map((peer, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: "12px",
-                        bgcolor: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid rgba(255, 255, 255, 0.05)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="body2" fontWeight="bold" sx={{ color: "#F1F5F9" }}>
-                          {peer.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.4)" }}>
-                          {peer.course}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={peer.status}
-                        size="small"
-                        color={peer.status === "Connected" ? "primary" : "secondary"}
-                        sx={{ fontSize: "0.65rem", height: "20px", fontWeight: "bold" }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-
-              <Box
-                sx={{
-                  position: "absolute",
-                  bottom: "10%",
-                  right: "5%",
-                  width: "280px",
-                  background: "rgba(15, 23, 42, 0.6)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  borderRadius: "24px",
-                  p: 3,
-                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
-                  transform: "rotate(6deg)",
-                  zIndex: 1,
-                }}
-              >
-                <Typography variant="body2" fontWeight="bold" sx={{ color: "#F1F5F9", mb: 1 }}>
-                  Verification Secure
-                </Typography>
-                <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.5)", display: "block", mb: 2 }}>
-                  Every student identity is securely validated via student IDs.
-                </Typography>
-                <Box
-                  sx={{
-                    height: "4px",
-                    width: "100%",
-                    bgcolor: "rgba(255,255,255,0.1)",
-                    borderRadius: "2px",
-                    overflow: "hidden",
-                    mb: 1,
-                  }}
-                >
-                  <Box sx={{ width: "75%", height: "100%", bgcolor: "success.main" }} />
-                </Box>
-                <Typography variant="caption" sx={{ color: "success.main", fontWeight: "bold" }}>
-                  Active Verified Rate: 98%
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* ─── Registered Colleges Search & Directory Interaction ─── */}
-      <Box
-        ref={selectionRef}
-        sx={{
-          py: 12,
-          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-          bgcolor: "rgba(10, 15, 30, 0.5)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <Container maxWidth="md">
-          <Box sx={{ textAlign: "center", mb: 6 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                color: "primary.light",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
-                mb: 1.5,
-                fontSize: "0.85rem",
-              }}
-            >
-              Get Connected
-            </Typography>
-            <Typography
-              variant="h3"
-              fontWeight="900"
-              sx={{
-                mb: 2,
-                fontSize: { xs: "2rem", md: "2.8rem" },
-                background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Find Your Campus Network
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ color: "rgba(255, 255, 255, 0.6)", maxWidth: "600px", mx: "auto" }}
-            >
-              Search for your college below. Once selected, you can directly explore its student table directory or proceed to register.
-            </Typography>
-          </Box>
-
-          {/* Central Glassmorphic Search Panel */}
-          <Box
-            sx={{
-              background: "rgba(30, 41, 59, 0.3)",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "28px",
-              p: { xs: 4, md: 5 },
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
-            }}
-          >
-            <Stack spacing={4}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 700, mb: 1.5 }}>
-                  Select or search your university
-                </Typography>
-                <Autocomplete
-                  id="college-search-main"
-                  options={colleges}
-                  getOptionLabel={(option) =>
-                    `${option.collegeName || option.name}, ${option.city || option.location}`
-                  }
-                  onChange={handleCollegeSelect}
-                  value={selectedCollege}
-                  loading={loading}
-                  PaperComponent={({ children, ...rest }) => (
-                    <Box
-                      {...rest}
-                      sx={{
-                        background: "#0F172A",
-                        border: "1px solid rgba(255, 255, 255, 0.12)",
-                        borderRadius: "14px",
-                        mt: 1,
-                        overflow: "hidden",
-                        boxShadow: "0 20px 40px rgba(0, 0, 0, 0.5)",
-                      }}
-                    >
-                      {children}
-                    </Box>
-                  )}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      background: "rgba(255, 255, 255, 0.04)",
-                      borderRadius: "16px",
-                      color: "#FFFFFF",
-                      "& fieldset": {
-                        borderColor: "rgba(255, 255, 255, 0.1)",
-                      },
-                      "&:hover fieldset": {
-                        borderColor: "rgba(129, 140, 248, 0.4)",
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: "#818CF8",
-                        borderWidth: "1.5px",
-                      },
-                    },
-                    "& .MuiInputLabel-root": {
-                      color: "rgba(148, 163, 184, 0.7)",
-                    },
-                    "& .MuiAutocomplete-popupIndicator": {
-                      color: "rgba(148, 163, 184, 0.6)",
-                    },
-                    "& .MuiAutocomplete-clearIndicator": {
-                      color: "rgba(148, 163, 184, 0.6)",
-                    },
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Start typing university name..."
-                      variant="outlined"
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search sx={{ color: "rgba(255,255,255,0.4)" }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <>
-                            {loading ? (
-                              <CircularProgress sx={{ color: "#818CF8" }} size={18} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-              </Box>
-
-              {error && (
-                <Typography sx={{ color: "#F87171", fontSize: "0.85rem", textAlign: "center" }}>
-                  {error}
-                </Typography>
-              )}
-
-              {/* Selected College Detail Card */}
-              {selectedCollege ? (
-                <Box
-                  sx={{
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(129, 140, 248, 0.2)",
-                    borderRadius: "20px",
-                    p: 3,
-                    animation: "fadeIn 0.3s ease-out",
-                    "@keyframes fadeIn": {
-                      from: { opacity: 0, transform: "translateY(10px)" },
-                      to: { opacity: 1, transform: "translateY(0)" },
-                    },
-                  }}
-                >
-                  <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    justifyContent="space-between"
-                    alignItems={{ xs: "flex-start", sm: "center" }}
-                    spacing={2.5}
-                    mb={3}
-                  >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Box
-                        sx={{
-                          p: 1.8,
-                          borderRadius: "14px",
-                          bgcolor: "rgba(79, 70, 229, 0.15)",
-                          color: "primary.light",
-                          display: "flex",
-                        }}
-                      >
-                        <School sx={{ fontSize: 28 }} />
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold" sx={{ color: "#F1F5F9" }}>
-                          {selectedCollege.collegeName || selectedCollege.name}
-                        </Typography>
-                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: "rgba(255,255,255,0.4)" }}>
-                          <LocationOn sx={{ fontSize: 14 }} />
-                          <Typography variant="caption">
-                            {selectedCollege.city || selectedCollege.location || "—"},{" "}
-                            {selectedCollege.state || "—"}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    </Stack>
-
-                    <Chip
-                      label={`${selectedCollege.students?.length || 0} Registered Students`}
-                      sx={{
-                        bgcolor: "rgba(79, 70, 229, 0.1)",
-                        color: "primary.light",
-                        border: "1px solid rgba(79, 70, 229, 0.2)",
-                        fontWeight: 700,
-                        borderRadius: "8px",
-                      }}
-                    />
-                  </Stack>
-
-                  <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        onClick={handleExploreDirectory}
-                        endIcon={<ChevronRight />}
-                        sx={{
-                          background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
-                          color: "#ffffff",
-                          py: 1.8,
-                          borderRadius: "12px",
-                          fontWeight: 700,
-                          textTransform: "none",
-                        }}
-                      >
-                        Explore Student Directory
-                      </Button>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        onClick={handleProceed}
-                        sx={{
-                          color: "primary.light",
-                          borderColor: "rgba(129, 140, 248, 0.3)",
-                          py: 1.8,
-                          borderRadius: "12px",
-                          fontWeight: 700,
-                          textTransform: "none",
-                          "&:hover": {
-                            borderColor: "primary.light",
-                            bgcolor: "rgba(129, 140, 248, 0.05)",
-                          },
-                        }}
-                      >
-                        Join Campus as Student
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    py: 4,
-                    textAlign: "center",
-                    border: "1px dashed rgba(255,255,255,0.08)",
-                    borderRadius: "20px",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)" }}>
-                    Choose your university above to check peer directories and start networking.
-                  </Typography>
-                </Box>
-              )}
-
-              {/* Popular quick select tags */}
-              {popularColleges.length > 0 && (
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "rgba(255,255,255,0.4)", fontWeight: 700, textTransform: "uppercase", display: "block", mb: 1.5 }}
-                  >
-                    Or select a registered campus quickly:
-                  </Typography>
-                  <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ gap: 1.5 }}>
-                    {popularColleges.map((col) => (
-                      <Chip
-                        key={col._id}
-                        label={col.collegeName || col.name}
-                        onClick={() => setSelectedCollege(col)}
-                        sx={{
-                          bgcolor: "rgba(255,255,255,0.03)",
-                          color: "rgba(255,255,255,0.7)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                          "&:hover": {
-                            bgcolor: "rgba(129, 140, 248, 0.15)",
-                            color: "primary.light",
-                            borderColor: "rgba(129, 140, 248, 0.3)",
-                          },
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-
-              <Box sx={{ display: "flex", justifyContent: "center", pt: 1 }}>
-                <Button
-                  variant="text"
-                  onClick={() => navigate("/register")}
-                  sx={{
-                    color: "secondary.light",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    "&:hover": { textDecoration: "underline", bgcolor: "transparent" },
-                  }}
-                >
-                  Can't find your college? Register a new college record →
-                </Button>
-              </Box>
-            </Stack>
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ─── Platform Features Section ─── */}
-      <Container maxWidth="lg" sx={{ py: { xs: 10, md: 14 }, position: "relative", zIndex: 1 }}>
-        <Box sx={{ textAlign: "center", mb: 8 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              color: "primary.light",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.15em",
-              mb: 1.5,
-              fontSize: "0.85rem",
-            }}
-          >
-            Rich Features
-          </Typography>
-          <Typography variant="h3" fontWeight="900" sx={{ mb: 2, fontSize: { xs: "2rem", md: "2.8rem" } }}>
-            Designed for Peer Collaboration
-          </Typography>
-          <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.5)", maxWidth: "550px", mx: "auto" }}>
-            CampusVerse includes premium tools designed to enhance student connection, communication, and resource discovery.
-          </Typography>
-        </Box>
-
-        <Grid container spacing={4}>
-          {[
-            {
-              icon: <Security sx={{ fontSize: 36 }} />,
-              title: "Verified Student Network",
-              desc: "Rest easy knowing that only actual students can view profiles or message. Verification secures our space.",
-              color: "rgba(79, 70, 229, 0.15)",
-              textColor: "primary.light",
-            },
-            {
-              icon: <People sx={{ fontSize: 36 }} />,
-              title: "Peer-to-Peer Directory",
-              desc: "Instantly discover classmates in specific courses, semesters, or branches. Perfect for project partnerships.",
-              color: "rgba(236, 72, 153, 0.15)",
-              textColor: "secondary.light",
-            },
-            {
-              icon: <Forum sx={{ fontSize: 36 }} />,
-              title: "Centralized Chat Hub",
-              desc: "Direct messages allow you to schedule studies, clear doubts, and collaborate on assignments inside the app.",
-              color: "rgba(16, 185, 129, 0.15)",
-              textColor: "success.light",
-            },
-          ].map((feat, i) => (
-            <Grid item xs={12} md={4} key={i}>
-              <Box
-                sx={{
-                  p: 4.5,
-                  height: "100%",
-                  bgcolor: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid rgba(255, 255, 255, 0.05)",
-                  borderRadius: "24px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    borderColor: "rgba(255, 255, 255, 0.1)",
-                    bgcolor: "rgba(255, 255, 255, 0.04)",
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "16px",
-                    bgcolor: feat.color,
-                    color: feat.textColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    mb: 3,
-                  }}
-                >
-                  {feat.icon}
-                </Box>
-                <Typography variant="h6" fontWeight="bold" sx={{ color: "#F1F5F9", mb: 1.5 }}>
-                  {feat.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.5)", lineHeight: 1.6 }}>
-                  {feat.desc}
-                </Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </Box>
-  );
+/* ─────────────── Theme Tokens ─────────────── */
+const T = {
+  bg:         "#0B0F19",   // Deep Space background
+  surface:    "#0F172A",   // Slate surface / paper
+  surfaceAlt: "#111827",   // slightly lighter surface
+  card:       "rgba(30,41,59,0.45)",
+  border:     "rgba(255,255,255,0.07)",
+  borderHov:  "rgba(129,140,248,0.35)",
+  primary:    "#818CF8",
+  primaryDk:  "#4F46E5",
+  primaryMd:  "#6366F1",
+  pink:       "#EC4899",
+  emerald:    "#10B981",
+  amber:      "#F59E0B",
+  purple:     "#A78BFA",
+  textPrimary:"#F8FAFC",
+  textSec:    "#94A3B8",
+  textMuted:  "#64748B",
 };
 
-export default LandingPage;
+/* ─────────────── Helper ─────────────── */
+const esc = (s) => s.replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ═══════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════ */
+export default function LandingPage() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  const [colleges,    setColleges]    = useState(SAMPLE_COLLEGES);
+  const [searchVal,   setSearchVal]   = useState("");
+  const [selected,    setSelected]    = useState(null);
+  const [activeTab,   setActiveTab]   = useState("qa");
+  const [openFaq,     setOpenFaq]     = useState(null);
+
+  /* fetch real colleges */
+  useEffect(() => {
+    api.get("/colleges").then(({ data }) => {
+      const real = Array.isArray(data) ? data : (Array.isArray(data.colleges) ? data.colleges : []);
+      const merged = [
+        ...real,
+        ...SAMPLE_COLLEGES.filter(m => !real.some(r =>
+          (r.collegeName || r.name || "").toLowerCase() === m.collegeName.toLowerCase()
+        )),
+      ];
+      setColleges(merged);
+    }).catch(() => {});
+  }, []);
+
+  /* search */
+  const handleSearch = (val) => {
+    setSearchVal(val);
+    if (!val.trim()) { setSelected(null); return; }
+    setSelected(colleges.find(c =>
+      (c.collegeName || c.name || "").toLowerCase().includes(val.toLowerCase()) ||
+      (c.city || c.location || "").toLowerCase().includes(val.toLowerCase())
+    ) || null);
+  };
+
+  const pick = (name) => {
+    setSearchVal(name);
+    setSelected(colleges.find(c => (c.collegeName || c.name) === name) || null);
+  };
+
+  const handleJoin = () => {
+    if (!selected) return;
+    navigate("/register/student", { state: { college: selected._id, collegeName: selected.collegeName || selected.name, collegeLocation: selected.city || selected.location } });
+  };
+
+  const handleExplore = () => {
+    if (!selected) return;
+    navigate(`/colleges/${selected._id}/students`, { state: { collegeId: selected._id, collegeName: selected.collegeName || selected.name } });
+  };
+
+  const noMatch = searchVal.trim() !== "" && !selected;
+
+  /* preview panel */
+  const Preview = () => {
+    if (!searchVal.trim()) return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, padding:"10px 0" }}>
+        <span style={{ fontSize:22, opacity:0.25 }}>📍</span>
+        <span style={{ fontSize:11, color:T.textMuted, textAlign:"center", maxWidth:230, lineHeight:1.55 }}>
+          Search your college above to explore peer directories and join.
+        </span>
+      </div>
+    );
+    if (noMatch) return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, textAlign:"center" }}>
+        <span style={{ fontSize:12, fontWeight:700, color:T.textPrimary }}>No workspace found for "{esc(searchVal)}"</span>
+        <button onClick={() => navigate("/register")} style={{ background:"none", border:"none", color:T.primary, fontSize:11, cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}>
+          Register your college →
+        </button>
+      </div>
+    );
+    const col = selected;
+    const name = col.collegeName || col.name;
+    const city = col.city || col.location || "";
+    const count = typeof col.students === "number"
+      ? col.students.toLocaleString() + "+"
+      : (col.students?.length != null ? col.students.length.toLocaleString() + "+" : "—");
+    return (
+      <div style={{ display:"flex", flexDirection:"column", gap:10, width:"100%" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+          <span style={{ fontWeight:800, fontSize:13, color:T.textPrimary }}>{name}</span>
+          <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:6, background:"rgba(16,185,129,0.12)", color:T.emerald, border:"1px solid rgba(16,185,129,0.2)" }}>
+            ✓ Verified
+          </span>
+        </div>
+        <span style={{ fontSize:11, color:T.textSec }}>{city} · {count} active students</span>
+        <div style={{ display:"flex", gap:8, marginTop:4 }}>
+          <button onClick={handleJoin} style={{ flex:1, padding:"8px 14px", borderRadius:10, background:`linear-gradient(135deg,${T.primaryDk},${T.primaryMd})`, color:"#fff", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 12px rgba(79,70,229,0.3)` }}>
+            Join Sub-Verse →
+          </button>
+          <button onClick={handleExplore} style={{ flex:1, padding:"8px 14px", borderRadius:10, background:"transparent", color:T.textSec, fontSize:12, fontWeight:600, border:`1px solid ${T.border}`, cursor:"pointer", fontFamily:"inherit" }}>
+            View Directory
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  /* ────────────────────────────────────────────────── */
+  return (
+    <div style={{ backgroundColor:T.bg, color:T.textPrimary, fontFamily:"Inter, Poppins, Outfit, sans-serif", overflowX:"hidden", minHeight:"100vh" }}>
+
+      {/* ════════════ HERO ════════════ */}
+      <section id="college-search-hero" style={{
+        width:"100%",
+        padding:"72px 0 80px",
+        textAlign:"center",
+        borderBottom:`1px solid ${T.border}`,
+        background:`radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, ${T.bg} 70%)`,
+        position:"relative",
+      }}>
+        <div style={{ width:"100%", maxWidth:1280, margin:"0 auto", padding:"0 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:22 }}>
+
+          {/* version badge */}
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"5px 16px", borderRadius:999, background:"rgba(129,140,248,0.08)", border:"1px solid rgba(129,140,248,0.2)", color:T.primary, fontSize:11, fontWeight:500 }}>
+            <span style={{ width:7, height:7, borderRadius:"50%", background:T.primary, display:"inline-block" }} />
+            <span style={{ fontWeight:900, color:T.primary, fontSize:10, letterSpacing:"0.08em" }}>v2.0</span>
+            <span style={{ color:T.textMuted }}>·</span>
+            <span style={{ color:T.textSec }}>The premium network for connected college campuses</span>
+          </div>
+
+          {/* headline */}
+          <h1 style={{ fontSize:"clamp(2.4rem,6.5vw,4.5rem)", fontWeight:900, letterSpacing:"-0.04em", lineHeight:1.06, margin:0, color:"#fff" }}>
+            Step into the<br />
+            <span style={{ background:`linear-gradient(135deg,#ffffff 0%,#c7d2fe 45%,${T.primary} 100%)`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+              CampusVerse
+            </span>
+          </h1>
+
+          {/* subtitle */}
+          <p style={{ maxWidth:580, fontSize:14, color:T.textSec, lineHeight:1.75, margin:0 }}>
+            Share lecture materials, resolve homework doubts, trade textbooks, post announcements, and message peers securely inside your verified university workspace.
+          </p>
+
+          {/* feature badges */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
+            {[
+              { icon:"✓", label:"Verified Student IDs Only", c:T.emerald  },
+              { icon:"🛡", label:"Role-Based Access",         c:T.primary  },
+              { icon:"📁", label:"NotesVerse File Vault",     c:T.purple   },
+              { icon:"🛒", label:"Local Peer Marketplace",    c:T.amber    },
+            ].map((b,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 16px", borderRadius:12, background:T.card, border:`1px solid ${T.border}`, color:T.textPrimary, fontSize:12, fontWeight:500, backdropFilter:"blur(6px)" }}>
+                <span style={{ color:b.c }}>{b.icon}</span>
+                {b.label}
+              </div>
+            ))}
+          </div>
+
+          {/* ── CAMPUS FINDER CARD ── */}
+          <div id="portal" style={{ width:"100%", maxWidth:540, marginTop:10 }}>
+            <div style={{ background:T.surface, border:`1px solid rgba(129,140,248,0.15)`, borderTop:`1px solid rgba(129,140,248,0.25)`, borderRadius:24, padding:"24px 28px", textAlign:"left", boxShadow:`0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)` }}>
+
+              {/* header */}
+              <div style={{ display:"flex", alignItems:"center", gap:12, paddingBottom:16, borderBottom:`1px solid ${T.border}`, marginBottom:18 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:`linear-gradient(135deg,rgba(79,70,229,0.18),rgba(129,140,248,0.18))`, border:`1px solid rgba(129,140,248,0.3)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0, boxShadow:"0 4px 16px rgba(79,70,229,0.15)" }}>
+                  🎓
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:900, color:T.textPrimary, letterSpacing:"-0.01em" }}>Campus Portal Finder</div>
+                  <div style={{ fontSize:11, color:T.textMuted, marginTop:1 }}>Join your university sub-verse workspace</div>
+                </div>
+              </div>
+
+              {/* search input */}
+              <div style={{ position:"relative", marginBottom:14 }}>
+                <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:T.textMuted, fontSize:13 }}>🔍</span>
+                <input
+                  value={searchVal}
+                  onChange={e => handleSearch(e.target.value)}
+                  placeholder="Search university name..."
+                  style={{ width:"100%", boxSizing:"border-box", background:"rgba(11,15,25,0.7)", border:`1px solid ${T.border}`, borderRadius:14, padding:"11px 38px 11px 36px", fontSize:12, color:T.textPrimary, outline:"none", fontFamily:"inherit", transition:"all 0.2s" }}
+                  onFocus={e => { e.target.style.borderColor=T.primary; e.target.style.boxShadow=`0 0 0 3px rgba(129,140,248,0.15)`; }}
+                  onBlur={e => { e.target.style.borderColor=T.border; e.target.style.boxShadow="none"; }}
+                />
+                {searchVal && (
+                  <button onClick={() => { setSearchVal(""); setSelected(null); }}
+                    style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:13, lineHeight:1 }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* preview box */}
+              <div style={{ background:"rgba(11,15,25,0.5)", border:`1px solid ${selected ? "rgba(129,140,248,0.18)" : T.border}`, borderRadius:16, padding:"14px 18px", minHeight:108, display:"flex", flexDirection:"column", alignItems: selected ? "stretch" : "center", justifyContent:"center", marginBottom:16, transition:"border-color 0.2s" }}>
+                <Preview />
+              </div>
+
+              {/* suggested chips */}
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <span style={{ fontSize:10, fontWeight:800, color:T.textMuted, textTransform:"uppercase", letterSpacing:"0.12em" }}>Suggested Universities:</span>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {SAMPLE_COLLEGES.slice(0,4).map(col => (
+                    <button key={col._id} onClick={() => pick(col.collegeName)}
+                      style={{ padding:"5px 12px", borderRadius:10, background: selected?.collegeName === col.collegeName ? "rgba(99,102,241,0.18)" : "rgba(30,41,59,0.6)", border: selected?.collegeName === col.collegeName ? `1px solid rgba(129,140,248,0.45)` : `1px solid ${T.border}`, color: selected?.collegeName === col.collegeName ? T.primary : T.textSec, fontSize:11, cursor:"pointer", transition:"all 0.18s", fontFamily:"inherit", fontWeight:600 }}>
+                      {col.collegeName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* register link */}
+              <div style={{ paddingTop:14, marginTop:14, borderTop:`1px solid ${T.border}`, textAlign:"center" }}>
+                <button onClick={() => navigate("/register")}
+                  style={{ fontSize:11, color:T.primary, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600, opacity:0.85 }}>
+                  Can't find your college? Register a new record ↗
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ════════════ STATS ════════════ */}
+      <section id="why-choose-us" style={{ width:"100%", padding:"40px 24px", borderBottom:`1px solid ${T.border}`, background:T.surfaceAlt }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:24, textAlign:"center" }}>
+          {[
+            { val:"15,000+",  label:"Active Students",     c:"#fff"      },
+            { val:"120+",     label:"Campuses Registered", c:"#fff"      },
+            { val:"45,000+",  label:"Shared NotesVerse",   c:"#fff"      },
+            { val:"99.8%",    label:"Approval Security",   c:T.emerald   },
+          ].map((s,i) => (
+            <div key={i}>
+              <div style={{ fontSize:"clamp(1.5rem,3.5vw,2.2rem)", fontWeight:900, color:s.c, letterSpacing:"-0.03em", fontVariantNumeric:"tabular-nums" }}>{s.val}</div>
+              <div style={{ fontSize:10, fontWeight:700, color:T.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginTop:4 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ════════════ WORKFLOW ════════════ */}
+      <section id="how-it-works" style={{ width:"100%", padding:"72px 24px", borderBottom:`1px solid ${T.border}`, background:`radial-gradient(ellipse 70% 60% at 50% 50%, rgba(168,85,247,0.08) 0%, ${T.bg} 70%)` }}>
+        <div style={{ maxWidth:1280, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:48 }}>
+            <span style={{ fontSize:10, fontWeight:800, color:T.primary, textTransform:"uppercase", letterSpacing:"0.18em", padding:"4px 14px", borderRadius:999, background:"rgba(129,140,248,0.08)", border:`1px solid rgba(129,140,248,0.2)`, display:"inline-block", marginBottom:12 }}>WORKFLOW</span>
+            <h2 style={{ fontSize:"clamp(1.6rem,4vw,2.8rem)", fontWeight:900, color:"#fff", letterSpacing:"-0.03em", margin:"0 0 12px" }}>Unified College Collaboration</h2>
+            <p style={{ fontSize:13, color:T.textSec, maxWidth:520, margin:"0 auto", lineHeight:1.7 }}>CampusVerse replaces cluttered social media groups with clean, secure, academic-scoped modules.</p>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:20 }}>
+            {[
+              { num:"01", icon:"🏛", title:"Select Your Campus",       hc:`rgba(99,102,241,0.4)`,  desc:"Select from our database of accredited universities. If your college isn't registered, submit an entry." },
+              { num:"02", icon:"🪪", title:"Verify Student Status",     hc:`rgba(168,85,247,0.4)`,  desc:"Upload your university ID card. College Admins review submissions to guarantee community safety." },
+              { num:"03", icon:"💬", title:"Ask & Verify Academic Q&A", hc:`rgba(16,185,129,0.4)`,  desc:"Post queries regarding fees, mid-terms, or placements. Get answers verified by faculty and seniors." },
+              { num:"04", icon:"🗄", title:"Vault Notes & Marketplace", hc:`rgba(245,158,11,0.4)`,  desc:"Access previous year papers, lecture notes, and trade used textbooks with peers inside your campus." },
+            ].map((step,i) => (
+              <StepCard key={i} {...step} T={T} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ FEATURES TABS ════════════ */}
+      <section id="features" style={{ width:"100%", padding:"72px 24px", borderBottom:`1px solid ${T.border}`, background:T.surfaceAlt }}>
+        <div style={{ maxWidth:1280, margin:"0 auto" }}>
+
+          <div style={{ textAlign:"center", marginBottom:40 }}>
+            <span style={{ fontSize:10, fontWeight:800, color:T.purple, textTransform:"uppercase", letterSpacing:"0.18em", padding:"4px 14px", borderRadius:999, background:"rgba(168,85,247,0.08)", border:`1px solid rgba(168,85,247,0.2)`, display:"inline-block", marginBottom:12 }}>MODULES</span>
+            <h2 style={{ fontSize:"clamp(1.6rem,4vw,2.8rem)", fontWeight:900, color:"#fff", letterSpacing:"-0.03em", margin:0 }}>Built for Modern Student Life</h2>
+          </div>
+
+          {/* tab switcher */}
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:28 }}>
+            <div style={{ display:"inline-flex", background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:4, gap:2 }}>
+              {[
+                { id:"qa",     icon:"💬", label:"Q&A Feed"    },
+                { id:"notes",  icon:"📚", label:"Notes Vault" },
+                { id:"market", icon:"🛍", label:"Marketplace" },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  style={{ padding:"9px 22px", borderRadius:12, fontSize:12, fontWeight: activeTab===tab.id ? 700 : 500, background: activeTab===tab.id ? `linear-gradient(135deg,${T.primaryDk},${T.primaryMd})` : "transparent", color: activeTab===tab.id ? "#fff" : T.textMuted, border:"none", cursor:"pointer", transition:"all 0.2s", display:"flex", alignItems:"center", gap:6, fontFamily:"inherit", boxShadow: activeTab===tab.id ? `0 4px 12px rgba(79,70,229,0.3)` : "none" }}>
+                  <span style={{ fontSize:14 }}>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* tab panels */}
+          {activeTab === "qa" && (
+            <TabCard
+              badge={{ text:"✓ Solved Question", c:T.emerald, bg:"rgba(16,185,129,0.1)", bc:"rgba(16,185,129,0.25)" }}
+              title="B.Tech CSE Semester 3 Fee Breakdown & Installments"
+              meta="Nehru College"
+              body="Tuition fee is ₹65,000 per semester with a refundable caution deposit of ₹10,000 paid during enrollment. Installments are split into 2 equal payments before mid-term exams."
+              footer={
+                <><span style={{ color:T.emerald, fontWeight:700, fontSize:12 }}>👍 24 Helpful</span><span style={{ color:T.textMuted }}>·</span><span style={{ color:T.textSec, fontSize:11 }}>3 verified answers</span></>
+              }
+              footerRight={<span style={{ color:T.primary, fontFamily:"monospace", fontSize:11 }}>#fees #cse</span>}
+              T={T}
+            />
+          )}
+          {activeTab === "notes" && (
+            <TabCard
+              badge={{ text:"📄 NotesVerse File Vault", c:T.purple, bg:"rgba(168,85,247,0.1)", bc:"rgba(168,85,247,0.25)" }}
+              title="Data Structures & Algorithms Handwritten Lecture Notes"
+              meta="PDF · 14.2 MB"
+              body="Complete unit 1-5 handwritten notes including Graph algorithms, Tree traversals, and dynamic programming examples with solved past paper questions."
+              footer={
+                <><span style={{ color:T.amber, fontSize:11 }}>⭐ 4.9 (88 ratings)</span><span style={{ color:T.textMuted }}>·</span><span style={{ color:T.textSec, fontSize:11 }}>1,240 downloads</span></>
+              }
+              footerRight={<button onClick={() => showToast("Note download started","success")} style={{ fontSize:11, fontWeight:700, color:T.primary, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit" }}>Download PDF</button>}
+              T={T}
+            />
+          )}
+          {activeTab === "market" && (
+            <TabCard
+              badge={{ text:"🏷 Peer Marketplace", c:T.amber, bg:"rgba(245,158,11,0.1)", bc:"rgba(245,158,11,0.25)" }}
+              title="Engineering Mathematics 3rd Ed. (Cormen & Ross)"
+              meta={<span style={{ fontSize:18, fontWeight:900, color:T.emerald, fontFamily:"monospace" }}>₹450</span>}
+              body="Like new condition, zero highlighter marks. Includes supplementary formula chart book. Available for immediate pick-up at Campus Block B."
+              footer={<span style={{ color:T.textPrimary, fontWeight:500, fontSize:12 }}>Seller: Priya S. (CSE 3rd Year)</span>}
+              footerRight={<button onClick={() => showToast("Message sent to seller!","success")} style={{ padding:"6px 16px", borderRadius:10, background:`linear-gradient(135deg,${T.primaryDk},${T.primaryMd})`, color:"#fff", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>Contact Seller</button>}
+              T={T}
+            />
+          )}
+        </div>
+      </section>
+
+      {/* ════════════ FAQ ════════════ */}
+      <section id="faq" style={{ width:"100%", padding:"72px 24px", borderBottom:`1px solid ${T.border}`, background:T.bg }}>
+        <div style={{ maxWidth:760, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:40 }}>
+            <h2 style={{ fontSize:"clamp(1.6rem,4vw,2.4rem)", fontWeight:900, color:"#fff", letterSpacing:"-0.03em", margin:"0 0 8px" }}>Frequently Asked Questions</h2>
+            <p style={{ fontSize:12, color:T.textMuted }}>Everything you need to know about joining CampusVerse</p>
+          </div>
+
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {[
+              { q:"How is student identity verified?",       a:"Students must sign up using their official university email or upload a photo of their valid student ID card. Campus admins review each submission before granting access." },
+              { q:"Is CampusVerse free for students?",       a:"Yes! CampusVerse is 100% free for students and university clubs. Advanced moderation tools for administrators are available on request." },
+              { q:"What if my university isn't listed yet?", a:"Click \"Register a new record\" in the Campus Portal Finder. Once 5 students from your campus sign up, your workspace is activated automatically!" },
+              { q:"Can I connect with students from other campuses?", a:"Yes. While registered into your home campus sub-verse, you can browse directory registries and marketplace items globally." },
+            ].map((item, i) => (
+              <FaqItem key={i} q={item.q} a={item.a} open={openFaq===i} toggle={() => setOpenFaq(openFaq===i ? null : i)} T={T} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ FINAL CTA ════════════ */}
+      <section style={{ width:"100%", padding:"80px 24px", background:`radial-gradient(ellipse 70% 80% at 50% 100%, rgba(99,102,241,0.12) 0%, ${T.bg} 65%)`, textAlign:"center" }}>
+        <div style={{ maxWidth:600, margin:"0 auto", display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+          <h2 style={{ fontSize:"clamp(1.6rem,4vw,2.6rem)", fontWeight:900, color:"#fff", letterSpacing:"-0.03em", margin:0 }}>Step into the CampusVerse Today</h2>
+          <p style={{ fontSize:13, color:T.textSec, lineHeight:1.7, margin:0 }}>Join your classmates, access verified study files, and connect with peers on a secured campus platform.</p>
+          <div style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center", marginTop:4 }}>
+            <button
+              onClick={() => { const el=document.getElementById("portal"); el?.scrollIntoView({behavior:"smooth"}); }}
+              style={{ padding:"13px 32px", borderRadius:14, background:`linear-gradient(135deg,${T.primaryDk},${T.primaryMd})`, color:"#fff", fontSize:14, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 8px 24px rgba(79,70,229,0.35)`, transition:"all 0.2s" }}>
+              Get Started
+            </button>
+            <button
+              onClick={() => navigate("/login")}
+              style={{ padding:"13px 32px", borderRadius:14, background:"transparent", color:T.textPrimary, fontSize:14, fontWeight:700, border:`1px solid rgba(255,255,255,0.15)`, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}>
+              Sign In
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════ FOOTER ════════════ */}
+      <footer style={{ width:"100%", padding:"24px", borderTop:`1px solid ${T.border}`, background:T.surfaceAlt }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:12, color:T.textMuted }}>
+            <div style={{ width:26, height:26, borderRadius:8, background:`linear-gradient(135deg,${T.primaryDk},${T.primaryMd})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:12 }}>🎓</div>
+            <span style={{ fontWeight:800, color:T.textPrimary, fontSize:13 }}>CampusVerse</span>
+            <span>© 2026 CampusVerse Network Inc.</span>
+          </div>
+          <div style={{ display:"flex", gap:24, fontSize:12, color:T.textMuted }}>
+            {["Privacy Policy","Terms of Service","Contact Support"].map(link => (
+              <span key={link} style={{ cursor:"pointer", transition:"color 0.2s" }}
+                onMouseEnter={e => e.target.style.color=T.textPrimary}
+                onMouseLeave={e => e.target.style.color=T.textMuted}>{link}</span>
+            ))}
+          </div>
+        </div>
+      </footer>
+
+      <style>{`
+        input::placeholder { color: #475569; }
+        * { box-sizing: border-box; }
+        button:hover { opacity: 0.92; }
+      `}</style>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUB-COMPONENTS
+═══════════════════════════════════════════════════════ */
+
+function StepCard({ num, icon, title, desc, hc, T }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{ background:T.card, border:`1px solid ${hov ? hc : T.border}`, borderRadius:20, padding:"26px 28px", position:"relative", overflow:"hidden", transition:"border-color 0.2s, transform 0.2s, box-shadow 0.2s", transform: hov ? "translateY(-3px)" : "none", boxShadow: hov ? "0 12px 32px rgba(0,0,0,0.3)" : "none", backdropFilter:"blur(6px)" }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={{ width:42, height:42, borderRadius:12, background:`rgba(129,140,248,0.08)`, border:`1px solid rgba(129,140,248,0.18)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+          {icon}
+        </div>
+        <span style={{ fontSize:"clamp(2rem,5vw,3rem)", fontWeight:900, color: hov ? hc : T.border, transition:"color 0.2s", lineHeight:1, fontVariantNumeric:"tabular-nums" }}>{num}</span>
+      </div>
+      <h3 style={{ fontSize:15, fontWeight:800, color:T.textPrimary, margin:"0 0 10px", letterSpacing:"-0.01em" }}>{title}</h3>
+      <p style={{ fontSize:12, color:T.textSec, margin:0, lineHeight:1.7 }}>{desc}</p>
+    </div>
+  );
+}
+
+function TabCard({ badge, title, meta, body, footer, footerRight, T }) {
+  return (
+    <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:20, padding:"24px 28px", backdropFilter:"blur(6px)" }}>
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-start", justifyContent:"space-between", gap:14, paddingBottom:18, borderBottom:`1px solid ${T.border}`, marginBottom:16 }}>
+        <div>
+          <span style={{ fontSize:10, fontWeight:800, padding:"3px 9px", borderRadius:7, background:badge.bg, color:badge.c, border:`1px solid ${badge.bc}`, display:"inline-block", marginBottom:8 }}>{badge.text}</span>
+          <h3 style={{ fontSize:15, fontWeight:800, color:T.textPrimary, margin:0, letterSpacing:"-0.01em" }}>{title}</h3>
+        </div>
+        <span style={{ fontSize:11, color:T.textMuted, fontFamily:"monospace", flexShrink:0 }}>{meta}</span>
+      </div>
+      <p style={{ fontSize:13, color:T.textSec, lineHeight:1.75, marginBottom:18 }}>{body}</p>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:14, borderTop:`1px solid ${T.border}` }}>
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>{footer}</div>
+        <div>{footerRight}</div>
+      </div>
+    </div>
+  );
+}
+
+function FaqItem({ q, a, open, toggle, T }) {
+  return (
+    <div onClick={toggle}
+      style={{ background:T.card, border:`1px solid ${open ? "rgba(129,140,248,0.2)" : T.border}`, borderRadius:14, padding:"16px 20px", cursor:"pointer", userSelect:"none", transition:"border-color 0.2s", backdropFilter:"blur(6px)" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+        <span style={{ fontWeight:700, fontSize:13, color:T.textPrimary }}>{q}</span>
+        <span style={{ color:T.textMuted, fontSize:11, transform: open ? "rotate(180deg)" : "rotate(0)", transition:"transform 0.2s", flexShrink:0 }}>▼</span>
+      </div>
+      {open && (
+        <p style={{ fontSize:12, color:T.textSec, marginTop:12, marginBottom:0, lineHeight:1.75 }}>{a}</p>
+      )}
+    </div>
+  );
+}

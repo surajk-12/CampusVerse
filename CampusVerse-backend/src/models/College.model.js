@@ -9,6 +9,7 @@ const collegeSchema = new mongoose.Schema(
     pincode: { type: String, required: true },
     address: { type: String, required: true },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    admin: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // College Admin user
   },
   { timestamps: true }
 );

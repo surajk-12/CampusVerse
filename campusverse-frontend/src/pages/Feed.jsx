@@ -8,17 +8,18 @@ import {
   ArrowUpward, ArrowDownward, Comment as CommentIcon,
   Delete, Campaign, Security, Send, School, AccountCircle,
   AttachFile, Close, VideoLibrary, Image, PlayCircleOutline,
-  Info, Shield, Star, TrendingUp, LocationOn, SmartToy,
+  Info, Shield, Star, TrendingUp, LocationOn, SmartToy, Flag,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
+import useRole from "../hooks/useRole.js";
 
 export default function Feed() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isSuperAdmin, isCollegeAdmin, isModerator, canModerate, sameCollege } = useRole();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
 
   const [posts, setPosts] = useState([]);
@@ -51,7 +52,6 @@ export default function Feed() {
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   // Post Attachments State
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -185,6 +185,17 @@ export default function Feed() {
     );
   };
 
+  // Report post
+  const handleReportPost = async (postId) => {
+    try {
+      await api.post(`/feed/${postId}/report`);
+      showToast("Post reported for moderation review.", "success");
+    } catch (err) {
+      console.error("Failed to report post:", err);
+      showToast(err.response?.data?.message || "You have already reported this post.", "info");
+    }
+  };
+
   // Vote post
   const handleVote = async (postId, direction) => {
     try {
@@ -273,10 +284,6 @@ export default function Feed() {
     );
   }
 
-  const postsToDisplay = aiFilteredIds
-    ? posts.filter((post) => aiFilteredIds.includes(post._id))
-    : posts;
-
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Grid container spacing={4}>
@@ -310,12 +317,7 @@ export default function Feed() {
             </Box>
           </Paper>
 
-          {/* AI Copilot Search Bar */}
-          <AiCopilot
-            type="feed"
-            data={posts}
-            onAiFilter={(ids) => setAiFilteredIds(ids)}
-          />
+
 
           {/* Create Post Area */}
           <Paper
@@ -558,28 +560,9 @@ export default function Feed() {
                 Be the first to share something with your campus!
               </Typography>
             </Paper>
-          ) : postsToDisplay.length === 0 ? (
-            <Paper
-              elevation={0}
-              sx={{
-                py: 10,
-                textAlign: "center",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "24px",
-                bgcolor: "rgba(255, 255, 255, 0.01)",
-              }}
-            >
-              <SmartToy sx={{ fontSize: 60, color: "text.secondary", mb: 2, opacity: 0.15 }} />
-              <Typography variant="h6" color="text.secondary" fontWeight="700">
-                No posts match AI filters
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Try adjusting your search query or clear the AI filter to see all posts.
-              </Typography>
-            </Paper>
           ) : (
-            <Stack spacing={3}>
-              {postsToDisplay.map((post) => {
+            <Stack spacing={4}>
+              {posts.map((post) => {
                 const hasUpvoted = post.upvotes?.includes(user._id);
                 const hasDownvoted = post.downvotes?.includes(user._id);
                 const isMyPost = post.isEditable;
@@ -644,24 +627,53 @@ export default function Feed() {
                       </Stack>
 
                       {/* Header Actions */}
-                      {isMyPost && (
-                        <IconButton
-                          color="error"
-                          size="small"
-                          onClick={() => handleDeletePost(post._id)}
-                          sx={{
-                            opacity: 0.4,
-                            "&:hover": { 
-                              opacity: 1, 
-                              bgcolor: "rgba(239, 68, 68, 0.08)" 
-                            },
-                            borderRadius: "10px",
-                            p: 0.8,
-                          }}
-                        >
-                          <Delete sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      )}
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        {/* Report Post */}
+                        {!isMyPost && (
+                          <Tooltip title="Report Post">
+                            <IconButton
+                              color="warning"
+                              size="small"
+                              onClick={() => handleReportPost(post._id)}
+                              sx={{
+                                opacity: 0.4,
+                                "&:hover": { 
+                                  opacity: 1, 
+                                  bgcolor: "rgba(245, 158, 11, 0.08)" 
+                                },
+                                borderRadius: "10px",
+                                p: 0.8,
+                              }}
+                            >
+                              <Flag sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+
+                        {/* Delete Post */}
+                        {(isMyPost ||
+                          isSuperAdmin ||
+                          (canModerate && sameCollege(post.college))) && (
+                          <Tooltip title="Delete Post">
+                            <IconButton
+                              color="error"
+                              size="small"
+                              onClick={() => handleDeletePost(post._id)}
+                              sx={{
+                                opacity: 0.4,
+                                "&:hover": { 
+                                  opacity: 1, 
+                                  bgcolor: "rgba(239, 68, 68, 0.08)" 
+                                },
+                                borderRadius: "10px",
+                                p: 0.8,
+                              }}
+                            >
+                              <Delete sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
                     </Stack>
 
                     {/* Post Content */}

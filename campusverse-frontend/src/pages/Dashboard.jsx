@@ -8,8 +8,7 @@ import { Search, School, People, Notifications, Class } from "@mui/icons-materia
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios.js";
-import AiCopilot from "../components/AiCopilot.jsx";
-
+import AISearchInput from "../components/AISearchInput.jsx";
 export default function Dashboard() {
   const { user, notifications, friends } = useAuth();
   const nav = useNavigate();
@@ -19,7 +18,6 @@ export default function Dashboard() {
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(10);
   const [myCollegeDetails, setMyCollegeDetails] = useState(null);
-  const [aiFilteredIds, setAiFilteredIds] = useState(null);
 
   useEffect(() => {
     api.get("/colleges")
@@ -38,14 +36,55 @@ export default function Dashboard() {
       .catch((err) => console.error(err));
   }, [user?.college]);
 
+  useEffect(() => {
+    const handleAIFilter = (e) => {
+      if (e.detail?.searchString) {
+        setSearch(e.detail.searchString);
+        setPage(0);
+      }
+    };
+    window.addEventListener("ai-filter", handleAIFilter);
+    return () => window.removeEventListener("ai-filter", handleAIFilter);
+  }, []);
+
   if (!user) return null;
 
   const pendingRequests = notifications.filter((n) => n.status === "pending").length;
 
-  const filteredColleges = colleges.filter((c) => {
-    const isAiMatched = aiFilteredIds === null || aiFilteredIds.includes(c._id);
-    if (!isAiMatched) return false;
+  const parseSearchCondition = (query) => {
+    const q = query.toLowerCase().trim();
+    if (q.includes("student")) {
+      const numMatch = q.match(/\d+/);
+      if (numMatch) {
+        const targetCount = parseInt(numMatch[0], 10);
+        if (q.includes("more than") || q.includes("greater than") || q.includes("above") || q.includes("over") || q.includes(">")) {
+          return (c) => (c.students?.length || 0) > targetCount;
+        }
+        if (q.includes("less than") || q.includes("under") || q.includes("below") || q.includes("<")) {
+          return (c) => (c.students?.length || 0) < targetCount;
+        }
+        if (q.includes("at least") || q.includes(">=")) {
+          return (c) => (c.students?.length || 0) >= targetCount;
+        }
+        if (q.includes("at most") || q.includes("<=")) {
+          return (c) => (c.students?.length || 0) <= targetCount;
+        }
+        return (c) => (c.students?.length || 0) === targetCount;
+      }
+    }
+    return null;
+  };
 
+  const filteredColleges = colleges.filter((c) => {
+    if (!search.trim()) return true;
+    
+    // Check if there is an active smart condition
+    const condition = parseSearchCondition(search);
+    if (condition) {
+      return condition(c);
+    }
+
+    // Fallback to standard text search
     const q = search.toLowerCase();
     return (
       (c.collegeName || c.name || "").toLowerCase().includes(q) ||
@@ -108,12 +147,7 @@ export default function Dashboard() {
         ))}
       </Grid>
 
-      {/* AI Search Assistant */}
-      <AiCopilot
-        type="dashboard"
-        data={colleges}
-        onAiFilter={(ids) => setAiFilteredIds(ids)}
-      />
+
 
       {/* 3. Table Header */}
       <Paper
@@ -136,28 +170,14 @@ export default function Dashboard() {
           <Typography variant="subtitle2" fontWeight="900" color="text.primary">Campuses Directory</Typography>
           <Typography variant="caption" color="text.secondary">Click any row to explore that college's student directory</Typography>
         </Box>
-        <TextField
-          placeholder="Search campuses..."
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          sx={{
-            maxWidth: { sm: 240 },
-            "& .MuiOutlinedInput-root": {
-              background: "rgba(255, 255, 255, 0.02)",
-              borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.06)",
-              "& fieldset": { border: "none" },
-            },
+        <AISearchInput
+          placeholder="Ask AI or search campuses..."
+          context="dashboard"
+          onFilterApply={(res) => {
+            setSearch(res.search || "");
+            setPage(0);
           }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ color: "text.secondary", fontSize: 18 }} />
-              </InputAdornment>
-            )
-          }}
+          sx={{ maxWidth: { sm: 260 }, width: { xs: "100%", sm: "auto" } }}
         />
       </Paper>
 

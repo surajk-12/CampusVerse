@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Discussions | Official B.Tech CSE Fee Structure (2026-27)</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#121215',
+              850: '#151518',
+              800: '#27272a',
+              700: '#3f3f46',
+              600: '#52525b',
+              400: '#a1a1aa',
+              500: '#71717a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+    /* Smooth Transitions */
+    .btn-transition {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Hide scrollbar utility */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-zinc-100 min-h-screen flex flex-col">
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <!-- Left: Breadcrumb & Back -->
+      <div class="flex items-center gap-3">
+        <a href="#" class="text-zinc-400 hover:text-white flex items-center gap-1.5 text-sm font-medium btn-transition">
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+          <span class="hidden sm:inline">Back to Discussions</span>
+        </a>
+        <span class="text-zinc-700 hidden sm:inline">/</span>
+        <span class="text-zinc-500 font-mono text-xs hidden sm:inline">Academic Questions</span>
+      </div>
+
+      <!-- Center/Right: Search, Publish Button, Avatar -->
+      <div class="flex items-center gap-4 flex-1 sm:flex-initial justify-end">
+        <div class="relative w-full max-w-xs hidden md:block">
+          <span class="absolute inset-y-0 left-3 flex items-center text-zinc-500">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </span>
+          <input 
+            type="text" 
+            placeholder="Search responses..." 
+            id="response-search"
+            class="w-full bg-zinc-850 border border-zinc-800 rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+          >
+        </div>
+
+        <a 
+          href="#response-composer-section" 
+          class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-2 shadow-lg shadow-indigo-600/10 btn-transition"
+        >
+          <i class="fa-solid fa-pen-fancy"></i>
+          <span>Write Response</span>
+        </a>
+
+        <div class="relative group">
+          <img 
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
+            alt="Current User" 
+            class="w-7 h-7 rounded-full object-cover ring-2 ring-zinc-800"
+          >
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-zinc-950 rounded-full"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Body Wrapper -->
+  <main class="max-w-6xl w-full mx-auto px-4 py-8 flex-grow">
+    <!-- Breadcrumb (Mobile Only) -->
+    <div class="flex sm:hidden items-center gap-2 mb-4 text-xs font-mono text-zinc-500">
+      <span>Academic Questions</span>
+      <span>/</span>
+      <span class="text-zinc-300">Thread #2804</span>
+    </div>
+
+    <!-- 12-Column Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Main Content Column (Span 8) -->
+      <div class="lg:col-span-8 space-y-6">
+        
+        <!-- A. Main Question Card -->
+        <article class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-xl">
+          <div class="flex justify-between items-start gap-4 mb-3">
+            <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Academic Forum</span>
+            <div class="flex items-center gap-2 text-xs text-zinc-500">
+              <i class="fa-regular fa-clock"></i>
+              <span>Asked 2 days ago</span>
+            </div>
+          </div>
+
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white mb-3">
+            Official B.Tech CSE Fee Structure & Installment Breakdown (2026-27 Session)
+          </h1>
+
+          <!-- Monospace Tags -->
+          <div class="flex flex-wrap gap-2 mb-5">
+            <span class="bg-zinc-850 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded border border-zinc-800">#fees</span>
+            <span class="bg-zinc-850 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded border border-zinc-800">#btech-cse</span>
+            <span class="bg-zinc-850 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded border border-zinc-800">#admissions</span>
+            <span class="bg-zinc-850 text-zinc-400 font-mono text-[10px] px-2 py-0.5 rounded border border-zinc-800">#installments</span>
+          </div>
+
+          <!-- Question Body -->
+          <div class="prose prose-invert max-w-none text-zinc-300 text-sm space-y-4 mb-6 leading-relaxed">
+            <p>Hello admissions cell and seniors,</p>
+            <p>Could someone please post the verified official tuition fees breakdown for the upcoming B.Tech Computer Science Engineering program (2026-27 academic session)?</p>
+            <p>Specifically, I need details on:</p>
+            <ul class="list-disc pl-5 space-y-2 text-zinc-400">
+              <li>Tuition fee amount per semester/year.</li>
+              <li>Refundable security deposits and university examination charges.</li>
+              <li>Installment availability, payment deadlines, and fine structure for late submissions.</li>
+            </ul>
+            <p>Thank you in advance!</p>
+          </div>
+
+          <div class="border-t border-zinc-800/80 pt-5 mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Author attribution -->
+            <div class="flex items-center gap-3">
+              <img 
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" 
+                alt="Manish Shah" 
+                class="w-8 h-8 rounded-full object-cover border border-zinc-700"
+              >
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-white">Manish Shah</span>
+                  <span class="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.2 rounded font-mono uppercase">Author</span>
+                </div>
+                <span class="text-[10px] text-zinc-500 block">B.Tech CSE · Roll No. 2026049</span>
+              </div>
+            </div>
+
+            <!-- Action Pill Buttons -->
+            <div class="flex items-center gap-2">
+              <button 
+                id="main-upvote-btn"
+                onclick="toggleVote('main-upvote-btn', 'main-vote-count', 42)"
+                class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-2 font-medium btn-transition"
+              >
+                <i class="fa-solid fa-arrow-up"></i>
+                <span>Helpful</span>
+                <span id="main-vote-count" class="font-mono bg-zinc-800 px-1.5 py-0.2 rounded text-zinc-300">42</span>
+              </button>
+
+              <button 
+                id="main-bookmark-btn"
+                onclick="toggleBookmark()"
+                class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg p-2 text-xs flex items-center justify-center btn-transition"
+                title="Bookmark thread"
+              >
+                <i class="fa-regular fa-bookmark" id="bookmark-icon"></i>
+              </button>
+
+              <button 
+                onclick="copyShareLink()"
+                class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg p-2 text-xs flex items-center justify-center btn-transition"
+                title="Copy share link"
+              >
+                <i class="fa-regular fa-share-from-square"></i>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- B. Filter Bar & Responses Section -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          <div class="flex items-center gap-2">
+            <h2 class="text-md font-bold text-white tracking-tight">Responses</h2>
+            <span id="responses-count-badge" class="bg-zinc-800 text-zinc-400 font-mono text-xs px-2 py-0.5 rounded-full border border-zinc-700">3</span>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="flex bg-zinc-900 border border-zinc-800 p-0.5 rounded-lg text-xs font-medium">
+            <button 
+              id="filter-all" 
+              onclick="filterResponses('all')" 
+              class="px-3 py-1.2 rounded-md btn-transition bg-zinc-800 text-white"
+            >
+              All
+            </button>
+            <button 
+              id="filter-official" 
+              onclick="filterResponses('official')" 
+              class="px-3 py-1.2 rounded-md btn-transition text-zinc-400 hover:text-white"
+            >
+              Verified Staff
+            </button>
+            <button 
+              id="filter-student" 
+              onclick="filterResponses('student')" 
+              class="px-3 py-1.2 rounded-md btn-transition text-zinc-400 hover:text-white"
+            >
+              Community
+            </button>
+          </div>
+        </div>
+
+        <!-- C. Response List Cards -->
+        <div class="space-y-4" id="responses-list">
+          
+          <!-- Official / Verified Answer -->
+          <div class="bg-zinc-900 border-2 border-emerald-600/40 rounded-xl p-5 md:p-6 shadow-xl relative response-card" data-type="official" id="response-1">
+            <!-- Accepted badge -->
+            <div class="flex items-center justify-between gap-4 mb-4">
+              <span class="bg-emerald-950/40 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded border border-emerald-800/40 flex items-center gap-1.5 uppercase tracking-wide">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Accepted Official Solution</span>
+              </span>
+              <span class="text-xs text-zinc-500">Verified Answer</span>
+            </div>
+
+            <!-- Content -->
+            <div class="prose prose-invert max-w-none text-zinc-300 text-sm space-y-4 mb-5 leading-relaxed">
+              <p>Dear Manish, here is the approved academic fees structure for the B.Tech CSE program for the 2026-27 intake batch. Please review the detailed installment schedule below:</p>
+              
+              <!-- Embedded fee breakdown table -->
+              <div class="overflow-x-auto my-4 border border-zinc-800 rounded-lg">
+                <table class="w-full text-left text-xs font-mono border-collapse">
+                  <thead>
+                    <tr class="bg-zinc-850 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider">
+                      <th class="py-2.5 px-4 font-semibold">Fee Head</th>
+                      <th class="py-2.5 px-4 font-semibold">Frequency</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">Amount (INR)</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-zinc-800 text-zinc-300">
+                    <tr>
+                      <td class="py-2.5 px-4">Tuition Fee</td>
+                      <td class="py-2.5 px-4">Per Semester</td>
+                      <td class="py-2.5 px-4 text-right">₹95,000</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 px-4">University Examination Fee</td>
+                      <td class="py-2.5 px-4">Per Year</td>
+                      <td class="py-2.5 px-4 text-right">₹12,000</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 px-4">Refundable Caution Deposit</td>
+                      <td class="py-2.5 px-4">One-time</td>
+                      <td class="py-2.5 px-4 text-right">₹10,000</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 px-4">Student Activity Charges</td>
+                      <td class="py-2.5 px-4">Per Semester</td>
+                      <td class="py-2.5 px-4 text-right">₹6,500</td>
+                    </tr>
+                    <tr class="bg-zinc-850/50 font-bold text-white border-t border-zinc-700">
+                      <td class="py-2.5 px-4 text-indigo-400">Total Admission Fee (Semester 1)</td>
+                      <td class="py-2.5 px-4 text-indigo-400">First Term</td>
+                      <td class="py-2.5 px-4 text-right text-indigo-400">₹1,23,500</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Highlighted admin note box -->
+              <div class="bg-zinc-850/50 border-l-2 border-indigo-500 p-3.5 rounded-r-lg text-xs space-y-1.5">
+                <div class="font-bold text-white flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                  <span>Important Deadline Note</span>
+                </div>
+                <p class="text-zinc-400">Installment payments are divided into 2 terms: Term 1 due by July 15, 2026, and Term 2 due by Dec 15, 2026. Late fees accrue at ₹100 per day after the grace period.</p>
+              </div>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="border-t border-zinc-800/80 pt-4 mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <!-- Author card info -->
+              <div class="flex items-center gap-3">
+                <img 
+                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" 
+                  alt="Hardik Sharma" 
+                  class="w-8 h-8 rounded-full object-cover border border-zinc-700"
+                >
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white">Hardik Sharma</span>
+                    <span class="bg-emerald-950 text-emerald-400 border border-emerald-800/50 text-[9px] px-1.5 py-0.2 rounded font-mono uppercase">Finance Admin</span>
+                  </div>
+                  <span class="text-[10px] text-zinc-500 block">University Registrar Office</span>
+                </div>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex items-center gap-2">
+                <button 
+                  id="vote-ans-1"
+                  onclick="toggleVote('vote-ans-1', 'vote-count-ans-1', 28)"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>Helpful</span>
+                  <span id="vote-count-ans-1" class="font-mono bg-zinc-800 px-1 rounded text-zinc-300">28</span>
+                </button>
+
+                <button 
+                  onclick="toggleReply('reply-box-1')"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-reply"></i>
+                  <span>Reply</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsible Inline Reply Box -->
+            <div id="reply-box-1" class="hidden mt-4 pt-4 border-t border-zinc-800">
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Type your reply to Hardik..." 
+                  class="flex-1 bg-zinc-850 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+                >
+                <button 
+                  onclick="submitInlineReply('reply-box-1')"
+                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg btn-transition"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Community Answer Card 1 -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-xl response-card" data-type="student" id="response-2">
+            <div class="flex justify-between items-center gap-4 mb-3">
+              <span class="bg-zinc-800 text-zinc-400 text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700">Community Response</span>
+              <span class="text-xs text-zinc-500">Shared 1 day ago</span>
+            </div>
+
+            <div class="prose prose-invert max-w-none text-zinc-300 text-sm space-y-4 mb-5 leading-relaxed">
+              <p>For tuition installments, you can write an application to the Dean of Academic Affairs asking for custom installment splits if you have a financial constraint. They generally approve splitting the term payment into 2 smaller chunks due a month apart without late fines.</p>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="border-t border-zinc-800/80 pt-4 mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <!-- Author card info -->
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-900/50 border border-indigo-700/50 flex items-center justify-center text-xs font-bold text-indigo-300 font-mono">
+                  AK
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white">Amit Kumar</span>
+                    <span class="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.2 rounded font-mono uppercase">3rd Year</span>
+                  </div>
+                  <span class="text-[10px] text-zinc-500 block">B.Tech Computer Science (Data Science)</span>
+                </div>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex items-center gap-2">
+                <button 
+                  id="vote-ans-2"
+                  onclick="toggleVote('vote-ans-2', 'vote-count-ans-2', 15)"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>Helpful</span>
+                  <span id="vote-count-ans-2" class="font-mono bg-zinc-800 px-1 rounded text-zinc-300">15</span>
+                </button>
+
+                <button 
+                  onclick="toggleReply('reply-box-2')"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-reply"></i>
+                  <span>Reply</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsible Inline Reply Box -->
+            <div id="reply-box-2" class="hidden mt-4 pt-4 border-t border-zinc-800">
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Type your reply to Amit..." 
+                  class="flex-1 bg-zinc-850 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+                >
+                <button 
+                  onclick="submitInlineReply('reply-box-2')"
+                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg btn-transition"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Community Answer Card 2 -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-xl response-card" data-type="student" id="response-3">
+            <div class="flex justify-between items-center gap-4 mb-3">
+              <span class="bg-zinc-800 text-zinc-400 text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700">Community Response</span>
+              <span class="text-xs text-zinc-500">Shared 10 hours ago</span>
+            </div>
+
+            <div class="prose prose-invert max-w-none text-zinc-300 text-sm space-y-4 mb-5 leading-relaxed">
+              <p>Just to add, the caution deposit of ₹10,000 is completely refundable, but only after completing the course clearance requirements or at course termination. Caution refund takes about 4-6 weeks to process through banking transfers.</p>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="border-t border-zinc-800/80 pt-4 mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <!-- Author card info -->
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-pink-900/40 border border-pink-700/50 flex items-center justify-center text-xs font-bold text-pink-300 font-mono">
+                  PS
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white">Priya Sharma</span>
+                    <span class="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.2 rounded font-mono uppercase">2nd Year</span>
+                  </div>
+                  <span class="text-[10px] text-zinc-500 block">B.Tech Computer Science (Cyber Security)</span>
+                </div>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex items-center gap-2">
+                <button 
+                  id="vote-ans-3"
+                  onclick="toggleVote('vote-ans-3', 'vote-count-ans-3', 9)"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>Helpful</span>
+                  <span id="vote-count-ans-3" class="font-mono bg-zinc-800 px-1 rounded text-zinc-300">9</span>
+                </button>
+
+                <button 
+                  onclick="toggleReply('reply-box-3')"
+                  class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+                >
+                  <i class="fa-solid fa-reply"></i>
+                  <span>Reply</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsible Inline Reply Box -->
+            <div id="reply-box-3" class="hidden mt-4 pt-4 border-t border-zinc-800">
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Type your reply to Priya..." 
+                  class="flex-1 bg-zinc-850 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+                >
+                <button 
+                  onclick="submitInlineReply('reply-box-3')"
+                  class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg btn-transition"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- D. Response Composer -->
+        <section id="response-composer-section" class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-xl space-y-4">
+          <div class="flex items-center gap-2 border-b border-zinc-800 pb-3">
+            <i class="fa-regular fa-message text-indigo-400"></i>
+            <h3 class="text-sm font-bold text-white tracking-tight">Your Response</h3>
+          </div>
+
+          <!-- Formatting toolbar -->
+          <div class="flex items-center gap-1 bg-zinc-850 border border-zinc-800 p-1 rounded-lg">
+            <button onclick="insertFormat('**', '**')" class="w-7 h-7 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded flex items-center justify-center text-xs btn-transition" title="Bold"><i class="fa-solid fa-bold"></i></button>
+            <button onclick="insertFormat('*', '*')" class="w-7 h-7 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded flex items-center justify-center text-xs btn-transition" title="Italic"><i class="fa-solid fa-italic"></i></button>
+            <button onclick="insertFormat('`', '`')" class="w-7 h-7 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded flex items-center justify-center text-xs btn-transition" title="Code"><i class="fa-solid fa-code"></i></button>
+            <span class="w-[1px] h-4 bg-zinc-800 mx-1"></span>
+            <button onclick="insertFormat('- ', '')" class="w-7 h-7 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded flex items-center justify-center text-xs btn-transition" title="List"><i class="fa-solid fa-list"></i></button>
+            <button onclick="insertFormat('[', '](url)')" class="w-7 h-7 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded flex items-center justify-center text-xs btn-transition" title="Link"><i class="fa-solid fa-link"></i></button>
+          </div>
+
+          <textarea 
+            id="response-textarea"
+            rows="5" 
+            placeholder="Write your answer, share structured details, or add guidelines..."
+            class="w-full bg-zinc-850 border border-zinc-800 rounded-lg p-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+          ></textarea>
+
+          <div class="flex items-center justify-between gap-4 pt-1">
+            <span class="text-[10px] text-zinc-500 font-mono">Formulating community guidelines compliance</span>
+            <button 
+              onclick="publishResponse()"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2 rounded-lg shadow-md shadow-indigo-600/10 btn-transition"
+            >
+              Publish Response
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Sidebar Column (Span 4) -->
+      <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- E. Thread Details Card -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between gap-4 pb-3 border-b border-zinc-800">
+            <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wide font-mono">Thread Status</span>
+            
+            <span class="bg-emerald-950/50 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-800/40 flex items-center gap-1.5">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>Solved</span>
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+            <div>
+              <span class="text-zinc-500 block mb-0.5">Views</span>
+              <span class="text-white font-bold">1,240</span>
+            </div>
+            <div>
+              <span class="text-zinc-500 block mb-0.5">Responses</span>
+              <span id="sidebar-responses-count" class="text-white font-bold">3</span>
+            </div>
+            <div>
+              <span class="text-zinc-500 block mb-0.5">Category</span>
+              <span class="text-white font-bold">Academics</span>
+            </div>
+            <div>
+              <span class="text-zinc-500 block mb-0.5">Subscribers</span>
+              <span class="text-white font-bold">18 Peers</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Participants Card -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl space-y-3.5">
+          <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wide font-mono block pb-2 border-b border-zinc-800">
+            Active Participants
+          </span>
+
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <div class="relative group">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Manish" class="w-8 h-8 rounded-full border border-zinc-800 cursor-pointer object-cover">
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none transition duration-150 whitespace-nowrap z-50">Manish Shah (Author)</div>
+            </div>
+            <div class="relative group">
+              <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Hardik" class="w-8 h-8 rounded-full border border-zinc-800 cursor-pointer object-cover">
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none transition duration-150 whitespace-nowrap z-50">Hardik Sharma (Finance)</div>
+            </div>
+            <div class="relative group">
+              <div class="w-8 h-8 rounded-full bg-indigo-900/50 border border-zinc-800 flex items-center justify-center text-xs font-bold text-indigo-300 font-mono cursor-pointer">AK</div>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none transition duration-150 whitespace-nowrap z-50">Amit Kumar</div>
+            </div>
+            <div class="relative group">
+              <div class="w-8 h-8 rounded-full bg-pink-900/40 border border-zinc-800 flex items-center justify-center text-xs font-bold text-pink-300 font-mono cursor-pointer">PS</div>
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none transition duration-150 whitespace-nowrap z-50">Priya Sharma</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Related Questions Card -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl space-y-3.5">
+          <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wide font-mono block pb-2 border-b border-zinc-800">
+            Related Questions
+          </span>
+
+          <ul class="divide-y divide-zinc-800/60 space-y-3">
+            <li class="pt-2 first:pt-0">
+              <a href="#" class="text-xs font-medium text-zinc-200 hover:text-indigo-400 line-clamp-2 leading-relaxed btn-transition">
+                How to apply for campus hostel allotment and mess fee payment (2026)?
+              </a>
+              <div class="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-zinc-500">
+                <span>12 responses</span>
+                <span>·</span>
+                <span class="text-emerald-500">Solved</span>
+              </div>
+            </li>
+            <li class="pt-3">
+              <a href="#" class="text-xs font-medium text-zinc-200 hover:text-indigo-400 line-clamp-2 leading-relaxed btn-transition">
+                Is laptop mandatory for 1st-year CSE students? Which OS is recommended?
+              </a>
+              <div class="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-zinc-500">
+                <span>34 responses</span>
+                <span>·</span>
+                <span class="text-zinc-500">Active</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- F. Toast Notification Container -->
+  <div 
+    id="toast-box" 
+    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-xl shadow-2xl translate-y-20 opacity-0 transition-all duration-300 pointer-events-none"
+  >
+    <div class="w-7 h-7 rounded-full bg-indigo-950 flex items-center justify-center text-indigo-400" id="toast-icon-bg">
+      <i class="fa-solid fa-check" id="toast-icon"></i>
+    </div>
+    <div>
+      <span id="toast-message" class="text-xs font-medium text-white block">Action completed successfully.</span>
+    </div>
+  </div>
+
+  <!-- Footer block -->
+  <footer class="bg-zinc-950 border-t border-zinc-800/80 py-6 mt-12 text-center text-xs text-zinc-500 font-mono">
+    <span>© 2026 CampusVerse Discussions Hub · Built with Tailwind CSS</span>
+  </footer>
+
+  <!-- Interactive JavaScript Features -->
+  <script>
+    // State Tracking
+    let responsesCount = 3;
+    let upvotedStates = {};
+    let isBookmarked = false;
+    let currentFilter = 'all';
+
+    // Toast Utility
+    function showToast(message, type = 'success') {
+      const toastBox = document.getElementById('toast-box');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+      const iconBg = document.getElementById('toast-icon-bg');
+
+      toastMsg.innerText = message;
+
+      if (type === 'success') {
+        iconBg.className = 'w-7 h-7 rounded-full bg-indigo-950 flex items-center justify-center text-indigo-400';
+        toastIcon.className = 'fa-solid fa-check';
+      } else if (type === 'info') {
+        iconBg.className = 'w-7 h-7 rounded-full bg-emerald-950 flex items-center justify-center text-emerald-400';
+        toastIcon.className = 'fa-solid fa-circle-info';
+      } else if (type === 'copy') {
+        iconBg.className = 'w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300';
+        toastIcon.className = 'fa-solid fa-copy';
+      }
+
+      // Slide in
+      toastBox.classList.remove('translate-y-20', 'opacity-0');
+      toastBox.classList.add('translate-y-0', 'opacity-100');
+
+      // Dismiss after 3s
+      setTimeout(() => {
+        toastBox.classList.remove('translate-y-0', 'opacity-100');
+        toastBox.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // A. Upvoting handler
+    function toggleVote(buttonId, counterId, initialCount) {
+      const button = document.getElementById(buttonId);
+      const counter = document.getElementById(counterId);
+
+      if (!upvotedStates[buttonId]) {
+        // Vote Up
+        upvotedStates[buttonId] = true;
+        button.classList.remove('bg-zinc-850', 'text-zinc-400', 'border-zinc-800');
+        button.classList.add('bg-indigo-950/40', 'text-indigo-400', 'border-indigo-800/40');
+        counter.innerText = initialCount + 1;
+        showToast("Thanks for marking this response as helpful!", "success");
+      } else {
+        // Undo Vote
+        upvotedStates[buttonId] = false;
+        button.classList.add('bg-zinc-850', 'text-zinc-400', 'border-zinc-800');
+        button.classList.remove('bg-indigo-950/40', 'text-indigo-400', 'border-indigo-800/40');
+        counter.innerText = initialCount;
+        showToast("Helpful vote removed.", "info");
+      }
+    }
+
+    // B. Bookmark toggler
+    function toggleBookmark() {
+      const icon = document.getElementById('bookmark-icon');
+      const btn = document.getElementById('main-bookmark-btn');
+
+      if (!isBookmarked) {
+        isBookmarked = true;
+        icon.className = 'fa-solid fa-bookmark text-indigo-400';
+        btn.classList.add('border-indigo-800/30', 'bg-indigo-950/10');
+        showToast("Discussion added to your bookmarks.", "success");
+      } else {
+        isBookmarked = false;
+        icon.className = 'fa-regular fa-bookmark';
+        btn.classList.remove('border-indigo-800/30', 'bg-indigo-950/10');
+        showToast("Discussion removed from bookmarks.", "info");
+      }
+    }
+
+    // C. Copy share link to clipboard
+    function copyShareLink() {
+      const dummyUrl = window.location.href;
+      navigator.clipboard.writeText(dummyUrl).then(() => {
+        showToast("Discussion link copied to clipboard!", "copy");
+      }).catch(err => {
+        // Fallback if clipboard API blocked
+        showToast("Failed to copy link.", "info");
+      });
+    }
+
+    // D. Filter responses by tabs
+    function filterResponses(type) {
+      currentFilter = type;
+      const cards = document.querySelectorAll('.response-card');
+
+      // Update Active Tab buttons styling
+      const tabs = ['all', 'official', 'student'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`filter-${t}`);
+        if (t === type) {
+          btn.className = 'px-3 py-1.2 rounded-md btn-transition bg-zinc-800 text-white';
+        } else {
+          btn.className = 'px-3 py-1.2 rounded-md btn-transition text-zinc-400 hover:text-white';
+        }
+      });
+
+      // Filter Visibility
+      cards.forEach(card => {
+        const cardType = card.getAttribute('data-type');
+        if (type === 'all') {
+          card.classList.remove('hidden');
+        } else if (type === 'official' && cardType === 'official') {
+          card.classList.remove('hidden');
+        } else if (type === 'student' && cardType === 'student') {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    // E. Toggle reply fields
+    function toggleReply(boxId) {
+      const box = document.getElementById(boxId);
+      box.classList.toggle('hidden');
+    }
+
+    // F. Submit inline replies
+    function submitInlineReply(boxId) {
+      const box = document.getElementById(boxId);
+      const input = box.querySelector('input');
+
+      if (!input.value.trim()) return;
+
+      showToast("Reply submitted to thread.", "success");
+      input.value = '';
+      box.classList.add('hidden');
+    }
+
+    // G. Formatting helper for composer toolbar
+    function insertFormat(startTag, endTag) {
+      const text = document.getElementById('response-textarea');
+      const start = text.selectionStart;
+      const end = text.selectionEnd;
+      const selText = text.value.substring(start, end);
+      const replacement = startTag + (selText || "text") + endTag;
+      text.value = text.value.substring(0, start) + replacement + text.value.substring(end);
+      text.focus();
+    }
+
+    // H. Publish new response card
+    function publishResponse() {
+      const textarea = document.getElementById('response-textarea');
+      const val = textarea.value.trim();
+
+      if (!val) {
+        showToast("Please enter some text in your response.", "info");
+        return;
+      }
+
+      responsesCount++;
+
+      // Update counters
+      document.getElementById('responses-count-badge').innerText = responsesCount;
+      document.getElementById('sidebar-responses-count').innerText = responsesCount;
+
+      const newId = `vote-new-${responsesCount}`;
+      const countId = `vote-count-new-${responsesCount}`;
+      const replyBoxId = `reply-box-new-${responsesCount}`;
+
+      // Build card HTML string
+      const cardHtml = `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-xl response-card" data-type="student">
+          <div class="flex justify-between items-center gap-4 mb-3">
+            <span class="bg-zinc-800 text-zinc-400 text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700">Community Response</span>
+            <span class="text-xs text-zinc-500">Shared just now</span>
+          </div>
+
+          <div class="prose prose-invert max-w-none text-zinc-300 text-sm space-y-4 mb-5 leading-relaxed">
+            <p>${val.replace(/\n/g, '<br>')}</p>
+          </div>
+
+          <!-- Footer Section -->
+          <div class="border-t border-zinc-800/80 pt-4 mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Author card info -->
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-200">
+                ME
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-white">Student Peer</span>
+                  <span class="bg-zinc-800 text-zinc-400 text-[9px] px-1.5 py-0.2 rounded font-mono uppercase">You</span>
+                </div>
+                <span class="text-[10px] text-zinc-500 block">B.Tech Computer Science student</span>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-2">
+              <button 
+                id="${newId}"
+                onclick="toggleVote('${newId}', '${countId}', 0)"
+                class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+              >
+                <i class="fa-solid fa-arrow-up"></i>
+                <span>Helpful</span>
+                <span id="${countId}" class="font-mono bg-zinc-800 px-1 rounded text-zinc-300">0</span>
+              </button>
+
+              <button 
+                onclick="toggleReply('${replyBoxId}')"
+                class="bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium btn-transition"
+              >
+                <i class="fa-solid fa-reply"></i>
+                <span>Reply</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Inline Reply Box -->
+          <div id="${replyBoxId}" class="hidden mt-4 pt-4 border-t border-zinc-800">
+            <div class="flex items-center gap-2">
+              <input 
+                type="text" 
+                placeholder="Type your reply..." 
+                class="flex-1 bg-zinc-850 border border-zinc-800 rounded-lg py-1.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 btn-transition"
+              >
+              <button 
+                onclick="submitInlineReply('${replyBoxId}')"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg btn-transition"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Append to the list container
+      const list = document.getElementById('responses-list');
+      list.insertAdjacentHTML('beforeend', cardHtml);
+
+      // Re-apply filter if not set to 'all'
+      filterResponses(currentFilter);
+
+      // Reset textarea
+      textarea.value = '';
+
+      // Toast feedback
+      showToast("Response published successfully!", "success");
+    }
+  </script>
+
+</body>
+</html>
