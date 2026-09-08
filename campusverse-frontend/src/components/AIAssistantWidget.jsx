@@ -110,17 +110,18 @@ export default function AIAssistantWidget() {
       {/* ── Chat Widget Panel ── */}
       {open && (
         <Paper
-          elevation={6}
+          elevation={8}
           sx={{
             position: "absolute",
             bottom: 64,
             right: 0,
-            width: { xs: 300, sm: 350 },
-            height: 430,
+            width: { xs: 320, sm: 360 },
+            height: 480,
             borderRadius: "20px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "linear-gradient(135deg, #0F172A 0%, #0B0F19 100%)",
-            boxShadow: "0 24px 48px -12px rgba(0, 0, 0, 0.5)",
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            boxShadow: "0 24px 48px -12px rgba(0, 0, 0, 0.25)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -128,7 +129,7 @@ export default function AIAssistantWidget() {
           }}
         >
           {/* Header Panel */}
-          <Box sx={{ p: 2, background: "rgba(255, 255, 255, 0.02)", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+          <Box sx={{ p: 2, bgcolor: "background.paper", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid", borderColor: "divider" }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Box sx={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #4F46E5 0%, #EC4899 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                 <RobotIcon sx={{ fontSize: 18 }} />
@@ -144,7 +145,7 @@ export default function AIAssistantWidget() {
           </Box>
 
           {/* Mode Switch Tabs */}
-          <Stack direction="row" sx={{ background: "rgba(0,0,0,0.15)", borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+          <Stack direction="row" sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
             <Button
               fullWidth
               startIcon={<ChatIcon sx={{ fontSize: 15 }} />}
@@ -193,9 +194,10 @@ export default function AIAssistantWidget() {
                       sx={{
                         p: 1.5,
                         borderRadius: msg.sender === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                        background: msg.sender === "user" ? "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)" : "rgba(255,255,255,0.04)",
-                        border: msg.sender === "user" ? "none" : "1px solid rgba(255, 255, 255, 0.06)",
-                        color: "#fff",
+                        background: msg.sender === "user" ? "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)" : "action.hover",
+                        border: msg.sender === "user" ? "none" : "1px solid",
+                        borderColor: "divider",
+                        color: msg.sender === "user" ? "#fff" : "text.primary",
                       }}
                     >
                       <Typography variant="body2" sx={{ fontSize: "0.82rem", lineHeight: 1.45 }}>{msg.text}</Typography>
@@ -215,7 +217,7 @@ export default function AIAssistantWidget() {
               <Box sx={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center", gap: 2, px: 1 }}>
                 <CompassIcon sx={{ fontSize: 42, color: "primary.main", opacity: 0.8 }} />
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={800}>Where do you want to go?</Typography>
+                  <Typography variant="subtitle2" fontWeight={800} color="text.primary">Where do you want to go?</Typography>
                   <Typography variant="caption" color="text.secondary">Type in natural language where you want to navigate inside CampusVerse</Typography>
                 </Box>
 
@@ -227,12 +229,6 @@ export default function AIAssistantWidget() {
                   onChange={e => setNavInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleNavigate()}
                   disabled={navLoading}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      background: "rgba(255,255,255,0.03)",
-                      borderRadius: "10px",
-                    }
-                  }}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -255,7 +251,7 @@ export default function AIAssistantWidget() {
 
           {/* Footer Input Area for Chat mode */}
           {mode === "chat" && (
-            <Box sx={{ p: 2, borderTop: "1px solid rgba(255, 255, 255, 0.06)", background: "rgba(0,0,0,0.1)" }}>
+            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
               <TextField
                 fullWidth
                 size="small"

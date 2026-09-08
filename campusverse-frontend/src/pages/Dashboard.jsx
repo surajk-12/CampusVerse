@@ -160,9 +160,10 @@ export default function Dashboard() {
           justifyContent: "space-between",
           alignItems: { xs: "stretch", sm: "center" },
           gap: 2,
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          border: "1px solid",
+          borderColor: "divider",
           borderRadius: "0px",
-          background: "rgba(30, 41, 59, 0.15)",
+          bgcolor: "background.paper",
           backdropFilter: "blur(12px)",
         }}
       >
@@ -182,7 +183,7 @@ export default function Dashboard() {
       </Paper>
 
       {/* 4. Full-width College Table */}
-      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflowX: "auto" }}>
+      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "0px", overflowX: "auto" }}>
         {paginatedColleges.length === 0 ? (
           <Box sx={{ p: 8, textAlign: "center" }}>
             <School sx={{ fontSize: 56, color: "text.disabled", mb: 2 }} />
@@ -203,7 +204,7 @@ export default function Dashboard() {
               {paginatedColleges.map((college, idx) => (
                 <TableRow key={college._id} hover
                   onClick={() => nav(`/colleges/${college._id}/students`, { state: { collegeId: college._id, collegeName: college.collegeName } })}
-                  sx={{ cursor: "pointer", bgcolor: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.015)", transition: "background 0.2s", "&:hover": { bgcolor: "rgba(255, 255, 255, 0.03) !important" } }}>
+                  sx={{ cursor: "pointer", transition: "background 0.2s" }}>
                   <TableCell sx={{ color: "text.disabled", fontWeight: 600, width: 48 }}>{page * rowsPerPage + idx + 1}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1.5} alignItems="center">

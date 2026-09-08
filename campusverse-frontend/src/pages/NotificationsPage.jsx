@@ -14,11 +14,13 @@ import {
 } from "@mui/material";
 import { Check, Close, Group, Forum } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios.js";
 
 export default function NotificationsPage() {
   const { user, setFriends, markNotificationsAsSeen, refreshFriends } = useAuth();
+  const { isDark, colors } = useThemeContext();
   const nav = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -133,11 +135,7 @@ export default function NotificationsPage() {
         <Typography
           variant="h4"
           fontWeight={900}
-          sx={{
-            background: "linear-gradient(135deg, #FFFFFF 0%, rgba(255,255,255,0.7) 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
+          sx={{ color: colors.subVerseTitle }}
         >
           Friend Requests
         </Typography>
@@ -152,9 +150,10 @@ export default function NotificationsPage() {
           sx={{
             py: 10,
             textAlign: "center",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
+            border: "1px solid",
+            borderColor: colors.borderColor,
             borderRadius: "24px",
-            bgcolor: "rgba(255, 255, 255, 0.01)",
+            bgcolor: colors.feedCardBg,
           }}
         >
           <Group sx={{ fontSize: 60, color: "text.secondary", mb: 2, opacity: 0.2 }} />
@@ -186,20 +185,20 @@ export default function NotificationsPage() {
                   gap: 2,
                   border: "1px solid",
                   borderColor: isAccepted
-                    ? "rgba(16, 185, 129, 0.2)"
+                    ? "rgba(16, 185, 129, 0.3)"
                     : isRejected
-                    ? "rgba(239, 68, 68, 0.15)"
-                    : "rgba(255, 255, 255, 0.08)",
+                    ? "rgba(239, 68, 68, 0.3)"
+                    : colors.borderColor,
                   bgcolor: isAccepted
-                    ? "rgba(16, 185, 129, 0.04)"
+                    ? (isDark ? "rgba(16, 185, 129, 0.04)" : "rgba(16, 185, 129, 0.06)")
                     : isRejected
-                    ? "rgba(239, 68, 68, 0.03)"
-                    : "rgba(255, 255, 255, 0.015)",
+                    ? (isDark ? "rgba(239, 68, 68, 0.03)" : "rgba(239, 68, 68, 0.05)")
+                    : colors.feedCardBg,
                   backdropFilter: "blur(8px)",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {
                     transform: "translateY(-2px)",
-                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
+                    boxShadow: colors.cardShadow,
                   },
                 }}
               >

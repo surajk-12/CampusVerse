@@ -27,34 +27,10 @@ export default function Login() {
     else setErr(res.message);
   };
 
-  const textFieldStyles = {
-    "& .MuiOutlinedInput-root": {
-      background: "rgba(255, 255, 255, 0.04)",
-      borderRadius: "14px",
-      color: "#FFFFFF",
-      "& fieldset": {
-        borderColor: "rgba(255, 255, 255, 0.1)",
-      },
-      "&:hover fieldset": {
-        borderColor: "rgba(129, 140, 248, 0.4)",
-      },
-      "&.Mui-focused fieldset": {
-        borderColor: "#818CF8",
-        borderWidth: "1.5px",
-      },
-    },
-    "& .MuiInputLabel-root": {
-      color: "rgba(255, 255, 255, 0.5)",
-    },
-    "& .MuiInputLabel-root.Mui-focused": {
-      color: "#818CF8",
-    },
-  };
-
   return (
     <Box
       sx={{
-        bgcolor: "#0B0F19", // Cohesive dark space theme background
+        bgcolor: "background.default",
         minHeight: "85vh",
         display: "flex",
         alignItems: "center",
@@ -62,6 +38,7 @@ export default function Login() {
         p: 2,
         position: "relative",
         overflow: "hidden",
+        transition: "background-color 0.3s ease",
       }}
     >
       {/* Decorative background ambient blobs */}
@@ -73,7 +50,7 @@ export default function Login() {
           width: "350px",
           height: "350px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(79,70,229,0.15) 0%, rgba(0,0,0,0) 70%)",
+          background: "radial-gradient(circle, rgba(79,70,229,0.12) 0%, rgba(0,0,0,0) 70%)",
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -86,7 +63,7 @@ export default function Login() {
           width: "350px",
           height: "350px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, rgba(0,0,0,0) 70%)",
+          background: "radial-gradient(circle, rgba(236,72,153,0.1) 0%, rgba(0,0,0,0) 70%)",
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -99,10 +76,11 @@ export default function Login() {
           width: "100%",
           maxWidth: 440,
           borderRadius: "28px",
-          background: "rgba(30, 41, 59, 0.3)",
+          bgcolor: "background.paper",
           backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.1)",
           position: "relative",
           zIndex: 1,
         }}
@@ -112,16 +90,14 @@ export default function Login() {
           fontWeight="900"
           mb={1}
           textAlign="center"
+          color="text.primary"
           sx={{
-            background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
             letterSpacing: "-0.02em",
           }}
         >
           Welcome Back
         </Typography>
-        <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", textAlign: "center", mb: 4 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mb: 4 }}>
           Log in to your CampusVerse student account
         </Typography>
 
@@ -152,7 +128,6 @@ export default function Login() {
               fullWidth
               required
               variant="outlined"
-              sx={textFieldStyles}
             />
             <TextField
               type="password"
@@ -162,7 +137,6 @@ export default function Login() {
               fullWidth
               required
               variant="outlined"
-              sx={textFieldStyles}
             />
             <Button
               type="submit"
@@ -178,29 +152,31 @@ export default function Login() {
                 background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
                 boxShadow: "0 10px 20px -5px rgba(79, 70, 229, 0.3)",
                 textTransform: "none",
-                "&:hover": {
+                ":hover": {
                   background: "linear-gradient(135deg, #4338CA 0%, #4F46E5 100%)",
                 },
               }}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </Stack>
         </form>
 
-        <Typography mt={4} variant="body2" textAlign="center" sx={{ color: "rgba(255, 255, 255, 0.5)" }}>
-          New to CampusVerse?{" "}
-          <Link
-            to="/register/student"
-            style={{
-              textDecoration: "none",
-              color: "#818CF8",
-              fontWeight: 700,
-            }}
-          >
-            Get started
-          </Link>
-        </Typography>
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Don't have a student account?{" "}
+            <Link
+              to="/register"
+              style={{
+                color: "#6366F1",
+                textDecoration: "none",
+                fontWeight: 700,
+              }}
+            >
+              Register here
+            </Link>
+          </Typography>
+        </Box>
       </Paper>
     </Box>
   );

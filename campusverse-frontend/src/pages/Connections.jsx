@@ -78,9 +78,10 @@ export default function Connections() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          border: "1px solid",
+          borderColor: "divider",
           borderRadius: "0px",
-          background: "rgba(30, 41, 59, 0.15)",
+          bgcolor: "background.paper",
           backdropFilter: "blur(12px)",
           flexWrap: "wrap",
           gap: 2,
@@ -113,7 +114,7 @@ export default function Connections() {
                   fontWeight: 700,
                   fontSize: "0.72rem",
                   px: 2,
-                  borderColor: "rgba(255, 255, 255, 0.12)",
+                  borderColor: "divider",
                   textTransform: "none",
                   whiteSpace: "nowrap",
                 }}
@@ -127,12 +128,12 @@ export default function Connections() {
 
       {/* 2. Main List Panel (Table / Loading / Empty) */}
       {loading ? (
-        <Paper elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", p: 6, textAlign: "center" }}>
+        <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "0px", p: 6, textAlign: "center", bgcolor: "background.paper" }}>
           <CircularProgress size={36} />
           <Typography variant="body2" color="text.secondary" mt={2}>Loading connections...</Typography>
         </Paper>
       ) : filtered.length === 0 ? (
-        <Paper elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", p: 6, textAlign: "center" }}>
+        <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "0px", p: 6, textAlign: "center", bgcolor: "background.paper" }}>
           <People sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
           <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={1}>
             {search ? "No results found" : "No connections yet"}
@@ -157,7 +158,7 @@ export default function Connections() {
           )}
         </Paper>
       ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0px", overflowX: "auto" }}>
+        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "0px", overflowX: "auto", bgcolor: "background.paper" }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -175,9 +176,9 @@ export default function Connections() {
                   onClick={() => nav(`/profile/${friend._id}`)}
                   sx={{
                     cursor: "pointer",
-                    bgcolor: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.015)",
+                    bgcolor: "transparent",
                     transition: "background 0.15s",
-                    "&:hover": { bgcolor: "rgba(255,255,255,0.03) !important" },
+                    "&:hover": { bgcolor: "action.hover !important" },
                   }}
                 >
                   <TableCell sx={{ color: "text.disabled", fontWeight: 600, width: 48 }}>{idx + 1}</TableCell>

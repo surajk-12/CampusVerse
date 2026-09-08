@@ -161,13 +161,13 @@ export default function MySidebar() {
   return (
     <Box>
       {/* User Profile Card */}
-      <Paper elevation={0} sx={{ display: { xs: "none", md: "block" }, textAlign: "center", mb: 3, p: 2.5, bgcolor: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "20px" }}>
-        <Avatar src={avatarUrl} sx={{ width: 72, height: 72, mx: "auto", mb: 1.5, boxShadow: "0 4px 10px rgba(0,0,0,0.3)", border: "2px solid rgba(255,255,255,0.08)" }}>
+      <Paper elevation={0} sx={{ display: { xs: "none", md: "block" }, textAlign: "center", mb: 3, p: 2.5, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "20px" }}>
+        <Avatar src={avatarUrl} sx={{ width: 72, height: 72, mx: "auto", mb: 1.5, boxShadow: "0 4px 10px rgba(0,0,0,0.15)", border: "2px solid", borderColor: "divider" }}>
           {user?.firstName?.[0]}
         </Avatar>
         <Typography variant="subtitle2" fontWeight={800} color="text.primary">{user?.firstName} {user?.lastName}</Typography>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>{user?.email}</Typography>
-        <Divider sx={{ mx: "auto", mb: 1.5, width: "60%", borderColor: "rgba(255,255,255,0.08)" }} />
+        <Divider sx={{ mx: "auto", mb: 1.5, width: "60%", borderColor: "divider" }} />
         {loading ? (
           <CircularProgress size={18} />
         ) : (

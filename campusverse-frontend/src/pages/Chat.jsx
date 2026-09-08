@@ -31,6 +31,7 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios.js";
 import { io } from "socket.io-client";
@@ -38,6 +39,7 @@ import { io } from "socket.io-client";
 export default function Chat() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isDark, colors } = useThemeContext();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
   const location = useLocation();
   const preSelectedFriend = location.state?.friend;
@@ -377,20 +379,20 @@ export default function Chat() {
       sx={{
         display: "flex",
         height: "80vh",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        border: `1px solid ${colors.borderColor}`,
         borderRadius: "24px",
         overflow: "hidden",
-        bgcolor: "rgba(30, 41, 59, 0.25)",
+        bgcolor: colors.bgPaper,
         backdropFilter: "blur(12px)",
-        boxShadow: "0 20px 40px rgba(0, 0, 0, 0.35)",
+        boxShadow: colors.boxShadow,
       }}
     >
       {/* Left Pane: Friends List */}
       <Box
         sx={{
           width: { xs: "100%", sm: 280 },
-          borderRight: "1px solid rgba(255, 255, 255, 0.08)",
-          bgcolor: "rgba(15, 23, 42, 0.35)",
+          borderRight: `1px solid ${colors.borderColor}`,
+          bgcolor: colors.commentBg,
           display: { xs: selectedFriend ? "none" : "flex", sm: "flex" },
           flexDirection: "column",
         }}
@@ -414,14 +416,17 @@ export default function Chat() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "20px",
-                bgcolor: "rgba(255, 255, 255, 0.02)",
+                bgcolor: colors.bgInput,
+                border: `1px solid ${colors.borderColor}`,
+                color: colors.inputText,
                 fontSize: "0.75rem",
+                "& fieldset": { border: "none" },
               },
             }}
           />
         </Box>
 
-        <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
+        <Divider sx={{ borderColor: colors.borderColor }} />
 
         <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
           {loadingFriends ? (
@@ -473,7 +478,7 @@ export default function Chat() {
                       "&:hover": {
                         background: isSelected
                           ? "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%)"
-                          : "rgba(255, 255, 255, 0.04)",
+                          : colors.pillHoverBg,
                         transform: "translateX(2px)",
                       },
                       justifyContent: { xs: "center", sm: "flex-start" },
@@ -507,7 +512,7 @@ export default function Chat() {
           flex: 1,
           display: { xs: selectedFriend ? "flex" : "none", sm: "flex" },
           flexDirection: "column",
-          bgcolor: "rgba(15, 23, 42, 0.1)",
+          bgcolor: colors.bgPaper,
         }}
       >
         {selectedFriend ? (
@@ -516,11 +521,11 @@ export default function Chat() {
             <Box
               sx={{
                 p: 2.2,
-                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                borderBottom: `1px solid ${colors.borderColor}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                bgcolor: "rgba(15, 23, 42, 0.4)",
+                bgcolor: colors.feedCardBg,
                 backdropFilter: "blur(20px)",
               }}
             >
@@ -536,7 +541,7 @@ export default function Chat() {
                   sx={{ width: 44, height: 44, bgcolor: "primary.light" }}
                 />
                 <Box>
-                  <Typography variant="subtitle2" fontWeight="700">
+                  <Typography variant="subtitle2" fontWeight="700" color="text.primary">
                     {selectedFriend.firstName} {selectedFriend.lastName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -547,17 +552,17 @@ export default function Chat() {
               
               {/* Voice and Video Call Shortcuts */}
               <Stack direction="row" spacing={1}>
-                <IconButton color="primary" onClick={() => startCall("voice")} sx={{ bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", "&:hover": { bgcolor: "rgba(255,255,255,0.07)" } }}>
+                <IconButton color="primary" onClick={() => startCall("voice")} sx={{ bgcolor: colors.pillBg, border: `1px solid ${colors.borderColor}`, "&:hover": { bgcolor: colors.pillHoverBg } }}>
                   <Call />
                 </IconButton>
-                <IconButton color="primary" onClick={() => startCall("video")} sx={{ bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", "&:hover": { bgcolor: "rgba(255,255,255,0.07)" } }}>
+                <IconButton color="primary" onClick={() => startCall("video")} sx={{ bgcolor: colors.pillBg, border: `1px solid ${colors.borderColor}`, "&:hover": { bgcolor: colors.pillHoverBg } }}>
                   <Videocam />
                 </IconButton>
               </Stack>
             </Box>
 
             {/* Chat message bubbles */}
-            <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: "rgba(15, 23, 42, 0.15)" }}>
+            <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: isDark ? "rgba(15, 23, 42, 0.15)" : "#F8FAFC" }}>
               {messages.length === 0 ? (
                 <Box
                   sx={{
@@ -592,12 +597,12 @@ export default function Chat() {
                             borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                             background: isMe 
                               ? "linear-gradient(135deg, #6366F1 0%, #A855F7 100%)" 
-                              : "rgba(255, 255, 255, 0.05)",
-                            color: isMe ? "#ffffff" : "#F1F5F9",
+                              : (isDark ? "rgba(255, 255, 255, 0.05)" : "#E2E8F0"),
+                            color: isMe ? "#ffffff" : colors.textPrimary,
                             boxShadow: isMe 
                               ? "0 4px 15px rgba(99, 102, 241, 0.2)" 
                               : "none",
-                            border: isMe ? "none" : "1px solid rgba(255, 255, 255, 0.06)",
+                            border: isMe ? "none" : `1px solid ${colors.borderColor}`,
                           }}
                         >
                           {/* Text Message Content */}
@@ -627,7 +632,7 @@ export default function Chat() {
                                             objectFit: "cover",
                                             borderRadius: "12px",
                                             cursor: "pointer",
-                                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                                            border: `1px solid ${colors.borderColor}`,
                                             transition: "transform 0.2s",
                                             "&:hover": { transform: "scale(1.02)" },
                                           }}
@@ -694,8 +699,8 @@ export default function Chat() {
                         sx={{
                           p: 1.5,
                           borderRadius: "20px 20px 20px 4px",
-                          bgcolor: "rgba(255, 255, 255, 0.03)",
-                          border: "1px solid rgba(255, 255, 255, 0.06)",
+                          bgcolor: colors.commentBg,
+                          border: `1px solid ${colors.borderColor}`,
                           display: "flex",
                           alignItems: "center",
                           gap: 0.5,
@@ -731,8 +736,8 @@ export default function Chat() {
               <Box
                 sx={{
                   p: 2,
-                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                  bgcolor: "rgba(15, 23, 42, 0.4)",
+                  borderTop: `1px solid ${colors.borderColor}`,
+                  bgcolor: colors.commentBg,
                   display: "flex",
                   gap: 2,
                   overflowX: "auto",
@@ -746,8 +751,8 @@ export default function Chat() {
                       width: 80,
                       height: 80,
                       borderRadius: "12px",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      bgcolor: "rgba(255,255,255,0.02)",
+                      border: `1px solid ${colors.borderColor}`,
+                      bgcolor: colors.pillBg,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -795,11 +800,11 @@ export default function Chat() {
               onSubmit={handleSend}
               sx={{
                 p: 2,
-                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                borderTop: `1px solid ${colors.borderColor}`,
                 display: "flex",
                 gap: 1.5,
                 alignItems: "center",
-                bgcolor: "rgba(15, 23, 42, 0.35)",
+                bgcolor: colors.feedCardBg,
               }}
             >
               {/* Paperclip Attach Button */}
@@ -816,10 +821,10 @@ export default function Chat() {
                 onClick={() => fileInputRef.current?.click()}
                 sx={{
                   p: 1.5,
-                  bgcolor: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  bgcolor: colors.pillBg,
+                  border: `1px solid ${colors.borderColor}`,
                   borderRadius: "14px",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.07)" },
+                  "&:hover": { bgcolor: colors.pillHoverBg },
                 }}
               >
                 <AttachFile sx={{ transform: "rotate(45deg)" }} />
@@ -835,8 +840,9 @@ export default function Chat() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "14px",
-                    bgcolor: "rgba(255,255,255,0.01)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    bgcolor: colors.bgInput,
+                    border: `1px solid ${colors.borderColor}`,
+                    color: colors.inputText,
                     "& fieldset": { border: "none" }
                   }
                 }}
@@ -848,10 +854,10 @@ export default function Chat() {
                 sx={{
                   p: 1.5,
                   background: (!inputMessage.trim() && selectedFiles.length === 0) || sending
-                    ? "rgba(255,255,255,0.03)"
+                    ? colors.pillBg
                     : "linear-gradient(135deg, #6366F1 0%, #A855F7 100%)",
                   color: (!inputMessage.trim() && selectedFiles.length === 0) || sending
-                    ? "rgba(255,255,255,0.2)"
+                    ? "text.disabled"
                     : "#ffffff",
                   borderRadius: "14px",
                   boxShadow: (!inputMessage.trim() && selectedFiles.length === 0) || sending
@@ -863,8 +869,8 @@ export default function Chat() {
                     boxShadow: "0 6px 15px rgba(139, 92, 246, 0.3)",
                   },
                   "&.Mui-disabled": {
-                    background: "rgba(255,255,255,0.02)",
-                    color: "rgba(255,255,255,0.2)",
+                    background: colors.pillBg,
+                    color: "text.disabled",
                   }
                 }}
               >

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios.js";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 
 /* ─────────────── Seed / Mock Data ─────────────── */
 const SAMPLE_COLLEGES = [
@@ -12,25 +13,36 @@ const SAMPLE_COLLEGES = [
   { _id: "mock-mit",   collegeName: "MIT Engineering",  city: "Pune",      state: "Maharashtra", students: 3100  },
 ];
 
-/* ─────────────── Theme Tokens ─────────────── */
-const T = {
-  bg:         "#0B0F19",   // Deep Space background
-  surface:    "#0F172A",   // Slate surface / paper
-  surfaceAlt: "#111827",   // slightly lighter surface
-  card:       "rgba(30,41,59,0.45)",
-  border:     "rgba(255,255,255,0.07)",
-  borderHov:  "rgba(129,140,248,0.35)",
-  primary:    "#818CF8",
-  primaryDk:  "#4F46E5",
-  primaryMd:  "#6366F1",
+/* ─────────────── Dynamic Theme Tokens Generator ─────────────── */
+const getT = (isDark) => ({
+  bg:         isDark ? "#0B0F19" : "#F8FAFC",   // Deep Space background vs Light slate background
+  surface:    isDark ? "#0F172A" : "#FFFFFF",   // Slate surface / paper vs Crisp white paper
+  surfaceAlt: isDark ? "#111827" : "#F1F5F9",   // Slightly lighter surface vs soft grey
+  card:       isDark ? "rgba(30,41,59,0.45)" : "#FFFFFF",
+  cardHover:  isDark ? "rgba(30,41,59,0.7)" : "#FFFFFF",
+  inputBg:    isDark ? "rgba(11,15,25,0.7)" : "#F1F5F9",
+  previewBg:  isDark ? "rgba(11,15,25,0.5)" : "#F8FAFC",
+  chipBg:     isDark ? "rgba(30,41,59,0.6)" : "#E2E8F0",
+  border:     isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)",
+  borderHov:  isDark ? "rgba(129,140,248,0.35)" : "rgba(79,70,229,0.35)",
+  primary:    isDark ? "#818CF8" : "#4F46E5",
+  primaryDk:  isDark ? "#4F46E5" : "#3730A3",
+  primaryMd:  isDark ? "#6366F1" : "#4F46E5",
   pink:       "#EC4899",
   emerald:    "#10B981",
   amber:      "#F59E0B",
   purple:     "#A78BFA",
-  textPrimary:"#F8FAFC",
-  textSec:    "#94A3B8",
-  textMuted:  "#64748B",
-};
+  textPrimary:isDark ? "#F8FAFC" : "#0F172A",
+  textSec:    isDark ? "#94A3B8" : "#475569",
+  textMuted:  isDark ? "#64748B" : "#64748B",
+  headlineColor: isDark ? "#FFFFFF" : "#0F172A",
+  heroGrad:   isDark
+    ? "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, #0B0F19 70%)"
+    : "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.12) 0%, #F8FAFC 70%)",
+  finderBoxShadow: isDark
+    ? "0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)"
+    : "0 10px 40px -10px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+});
 
 /* ─────────────── Helper ─────────────── */
 const esc = (s) => s.replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -41,6 +53,8 @@ const esc = (s) => s.replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 export default function LandingPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { isDark } = useThemeContext();
+  const T = getT(isDark);
 
   const [colleges,    setColleges]    = useState(SAMPLE_COLLEGES);
   const [searchVal,   setSearchVal]   = useState("");
@@ -126,8 +140,8 @@ export default function LandingPage() {
           <button onClick={handleJoin} style={{ flex:1, padding:"8px 14px", borderRadius:10, background:`linear-gradient(135deg,${T.primaryDk},${T.primaryMd})`, color:"#fff", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 12px rgba(79,70,229,0.3)` }}>
             Join Sub-Verse →
           </button>
-          <button onClick={handleExplore} style={{ flex:1, padding:"8px 14px", borderRadius:10, background:"transparent", color:T.textSec, fontSize:12, fontWeight:600, border:`1px solid ${T.border}`, cursor:"pointer", fontFamily:"inherit" }}>
-            View Directory
+          <button onClick={handleExplore} style={{ flex:1, padding:"8px 14px", borderRadius:10, background:T.card, color:T.textPrimary, fontSize:12, fontWeight:600, border:`1px solid ${T.border}`, cursor:"pointer", fontFamily:"inherit" }}>
+            Explore Peer Directory →
           </button>
         </div>
       </div>
@@ -136,7 +150,7 @@ export default function LandingPage() {
 
   /* ────────────────────────────────────────────────── */
   return (
-    <div style={{ backgroundColor:T.bg, color:T.textPrimary, fontFamily:"Inter, Poppins, Outfit, sans-serif", overflowX:"hidden", minHeight:"100vh" }}>
+    <div style={{ backgroundColor:T.bg, color:T.textPrimary, fontFamily:"Inter, Poppins, Outfit, sans-serif", overflowX:"hidden", minHeight:"100vh", transition: "background-color 0.3s ease, color 0.3s ease" }}>
 
       {/* ════════════ HERO ════════════ */}
       <section id="college-search-hero" style={{
@@ -144,7 +158,7 @@ export default function LandingPage() {
         padding:"72px 0 80px",
         textAlign:"center",
         borderBottom:`1px solid ${T.border}`,
-        background:`radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, ${T.bg} 70%)`,
+        background: T.heroGrad,
         position:"relative",
       }}>
         <div style={{ width:"100%", maxWidth:1280, margin:"0 auto", padding:"0 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:22 }}>
@@ -158,9 +172,9 @@ export default function LandingPage() {
           </div>
 
           {/* headline */}
-          <h1 style={{ fontSize:"clamp(2.4rem,6.5vw,4.5rem)", fontWeight:900, letterSpacing:"-0.04em", lineHeight:1.06, margin:0, color:"#fff" }}>
+          <h1 style={{ fontSize:"clamp(2.4rem,6.5vw,4.5rem)", fontWeight:900, letterSpacing:"-0.04em", lineHeight:1.06, margin:0, color: T.headlineColor }}>
             Step into the<br />
-            <span style={{ background:`linear-gradient(135deg,#ffffff 0%,#c7d2fe 45%,${T.primary} 100%)`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            <span style={{ background: isDark ? "linear-gradient(135deg,#ffffff 0%,#c7d2fe 45%,#818CF8 100%)" : "linear-gradient(135deg,#0F172A 0%,#4338CA 45%,#4F46E5 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
               CampusVerse
             </span>
           </h1>
@@ -187,7 +201,7 @@ export default function LandingPage() {
 
           {/* ── CAMPUS FINDER CARD ── */}
           <div id="portal" style={{ width:"100%", maxWidth:540, marginTop:10 }}>
-            <div style={{ background:T.surface, border:`1px solid rgba(129,140,248,0.15)`, borderTop:`1px solid rgba(129,140,248,0.25)`, borderRadius:24, padding:"24px 28px", textAlign:"left", boxShadow:`0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)` }}>
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderTop:`1px solid ${T.borderHov}`, borderRadius:24, padding:"24px 28px", textAlign:"left", boxShadow: T.finderBoxShadow }}>
 
               {/* header */}
               <div style={{ display:"flex", alignItems:"center", gap:12, paddingBottom:16, borderBottom:`1px solid ${T.border}`, marginBottom:18 }}>
@@ -207,7 +221,7 @@ export default function LandingPage() {
                   value={searchVal}
                   onChange={e => handleSearch(e.target.value)}
                   placeholder="Search university name..."
-                  style={{ width:"100%", boxSizing:"border-box", background:"rgba(11,15,25,0.7)", border:`1px solid ${T.border}`, borderRadius:14, padding:"11px 38px 11px 36px", fontSize:12, color:T.textPrimary, outline:"none", fontFamily:"inherit", transition:"all 0.2s" }}
+                  style={{ width:"100%", boxSizing:"border-box", background: T.inputBg, border:`1px solid ${T.border}`, borderRadius:14, padding:"11px 38px 11px 36px", fontSize:12, color:T.textPrimary, outline:"none", fontFamily:"inherit", transition:"all 0.2s" }}
                   onFocus={e => { e.target.style.borderColor=T.primary; e.target.style.boxShadow=`0 0 0 3px rgba(129,140,248,0.15)`; }}
                   onBlur={e => { e.target.style.borderColor=T.border; e.target.style.boxShadow="none"; }}
                 />
@@ -220,7 +234,7 @@ export default function LandingPage() {
               </div>
 
               {/* preview box */}
-              <div style={{ background:"rgba(11,15,25,0.5)", border:`1px solid ${selected ? "rgba(129,140,248,0.18)" : T.border}`, borderRadius:16, padding:"14px 18px", minHeight:108, display:"flex", flexDirection:"column", alignItems: selected ? "stretch" : "center", justifyContent:"center", marginBottom:16, transition:"border-color 0.2s" }}>
+              <div style={{ background: T.previewBg, border:`1px solid ${selected ? "rgba(129,140,248,0.18)" : T.border}`, borderRadius:16, padding:"14px 18px", minHeight:108, display:"flex", flexDirection:"column", alignItems: selected ? "stretch" : "center", justifyContent:"center", marginBottom:16, transition:"border-color 0.2s" }}>
                 <Preview />
               </div>
 
@@ -230,7 +244,7 @@ export default function LandingPage() {
                 <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                   {SAMPLE_COLLEGES.slice(0,4).map(col => (
                     <button key={col._id} onClick={() => pick(col.collegeName)}
-                      style={{ padding:"5px 12px", borderRadius:10, background: selected?.collegeName === col.collegeName ? "rgba(99,102,241,0.18)" : "rgba(30,41,59,0.6)", border: selected?.collegeName === col.collegeName ? `1px solid rgba(129,140,248,0.45)` : `1px solid ${T.border}`, color: selected?.collegeName === col.collegeName ? T.primary : T.textSec, fontSize:11, cursor:"pointer", transition:"all 0.18s", fontFamily:"inherit", fontWeight:600 }}>
+                      style={{ padding:"5px 12px", borderRadius:10, background: selected?.collegeName === col.collegeName ? "rgba(99,102,241,0.18)" : T.chipBg, border: selected?.collegeName === col.collegeName ? `1px solid rgba(129,140,248,0.45)` : `1px solid ${T.border}`, color: selected?.collegeName === col.collegeName ? T.primary : T.textSec, fontSize:11, cursor:"pointer", transition:"all 0.18s", fontFamily:"inherit", fontWeight:600 }}>
                       {col.collegeName}
                     </button>
                   ))}

@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 
 // MUI imports
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
@@ -14,9 +13,13 @@ import Container from "@mui/material/Container";
 import SchoolIcon from "@mui/icons-material/School";
 import IconButton from "@mui/material/IconButton";
 import LogoutIcon from "@mui/icons-material/Logout";
+import Tooltip from "@mui/material/Tooltip";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useThemeContext();
   const nav = useNavigate();
   const location = useLocation();
 
@@ -54,15 +57,25 @@ export default function NavBar() {
     <AppBar
       position="sticky"
       sx={{
-        background: isScrolled
-          ? "rgba(11, 15, 25, 0.85)"
-          : "rgba(11, 15, 25, 0.95)",
+        background: isDark
+          ? isScrolled
+            ? "rgba(11, 15, 25, 0.85)"
+            : "rgba(11, 15, 25, 0.95)"
+          : isScrolled
+          ? "rgba(255, 255, 255, 0.85)"
+          : "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        borderBottom: isDark
+          ? "1px solid rgba(255, 255, 255, 0.08)"
+          : "1px solid rgba(0, 0, 0, 0.08)",
         transition: "all 0.3s ease",
         top: 0,
         zIndex: 1100,
-        boxShadow: isScrolled ? "0 10px 30px -10px rgba(0,0,0,0.5)" : "none",
+        boxShadow: isScrolled
+          ? isDark
+            ? "0 10px 30px -10px rgba(0,0,0,0.5)"
+            : "0 10px 30px -10px rgba(0,0,0,0.1)"
+          : "none",
       }}
     >
       <Container maxWidth="lg">
@@ -104,7 +117,9 @@ export default function NavBar() {
               sx={{
                 fontWeight: 800,
                 letterSpacing: "-0.02em",
-                background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
+                background: isDark
+                  ? "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)"
+                  : "linear-gradient(135deg, #0F172A 0%, #334155 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 fontSize: "1.2rem",
@@ -116,80 +131,52 @@ export default function NavBar() {
 
           {/* Center Navigation Links (Public) */}
           <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 1 }}>
-            <Button
-              onClick={() => handleNavClick("features")}
-              sx={{
-                color: "rgba(255, 255, 255, 0.65)",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                borderRadius: "8px",
-                px: 2,
-                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
-              }}
-            >
-              Features
-            </Button>
-            <Button
-              onClick={() => handleNavClick("how-it-works")}
-              sx={{
-                color: "rgba(255, 255, 255, 0.65)",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                borderRadius: "8px",
-                px: 2,
-                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
-              }}
-            >
-              How It Works
-            </Button>
-            <Button
-              onClick={() => handleNavClick("college-search-hero")}
-              sx={{
-                color: "rgba(255, 255, 255, 0.65)",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                borderRadius: "8px",
-                px: 2,
-                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
-              }}
-            >
-              Find Campus
-            </Button>
-            <Button
-              onClick={() => handleNavClick("why-choose-us")}
-              sx={{
-                color: "rgba(255, 255, 255, 0.65)",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                borderRadius: "8px",
-                px: 2,
-                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
-              }}
-            >
-              About
-            </Button>
-            <Button
-              onClick={() => handleNavClick("faq")}
-              sx={{
-                color: "rgba(255, 255, 255, 0.65)",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                borderRadius: "8px",
-                px: 2,
-                "&:hover": { color: "#FFF", bgcolor: "rgba(255, 255, 255, 0.04)" }
-              }}
-            >
-              FAQ
-            </Button>
+            {["features", "how-it-works", "college-search-hero", "why-choose-us", "faq"].map((anchor, idx) => {
+              const labels = ["Features", "How It Works", "Find Campus", "About", "FAQ"];
+              return (
+                <Button
+                  key={anchor}
+                  onClick={() => handleNavClick(anchor)}
+                  sx={{
+                    color: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(15, 23, 42, 0.7)",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.88rem",
+                    borderRadius: "8px",
+                    px: 2,
+                    "&:hover": {
+                      color: isDark ? "#FFF" : "#0F172A",
+                      bgcolor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
+                >
+                  {labels[idx]}
+                </Button>
+              );
+            })}
           </Box>
 
           {/* Right side Actions */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 } }}>
+            {/* Theme Toggle Button */}
+            <Tooltip title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+              <IconButton
+                onClick={toggleTheme}
+                sx={{
+                  color: isDark ? "#FACC15" : "#6366F1",
+                  bgcolor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(99, 102, 241, 0.08)",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(99, 102, 241, 0.2)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(99, 102, 241, 0.15)",
+                    transform: "scale(1.05)",
+                  },
+                }}
+              >
+                {isDark ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
+              </IconButton>
+            </Tooltip>
+
             {user ? (
               <>
                 {/* On mobile, show a quick 'Dashboard' link instead of center tabs */}
@@ -202,13 +189,12 @@ export default function NavBar() {
                     textTransform: "none",
                     fontWeight: 700,
                     fontSize: "0.8rem",
-                    color: "rgba(255, 255, 255, 0.8)",
+                    color: "text.primary",
                     px: 1.5,
                     py: 0.5,
                     borderRadius: "8px",
                     "&:hover": {
-                      color: "#FFFFFF",
-                      bgcolor: "rgba(255, 255, 255, 0.08)",
+                      bgcolor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
                     },
                   }}
                 >
@@ -292,3 +278,4 @@ export default function NavBar() {
     </AppBar>
   );
 }
+

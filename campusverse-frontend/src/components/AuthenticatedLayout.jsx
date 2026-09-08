@@ -27,13 +27,17 @@ import {
   Menu as MenuIcon,
   Close as CloseIcon,
   QuestionAnswer as QnaIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 import AIAssistantWidget from "./AIAssistantWidget.jsx";
 
 export default function AuthenticatedLayout({ sidebarContent, children }) {
   const { user, logout, notifications, seenNotificationsCount } = useAuth();
+  const { isDark, toggleTheme } = useThemeContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,18 +64,20 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
   ];
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", transition: "background-color 0.3s ease" }}>
       {/* Top Professional Header Bar */}
       <AppBar
         position="sticky"
         elevation={0}
         sx={{
-          background: "rgba(15, 23, 42, 0.6)",
+          background: isDark ? "rgba(15, 23, 42, 0.75)" : "rgba(255, 255, 255, 0.85)",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          borderBottom: "1px solid",
+          borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
           zIndex: 1100,
           top: 0,
           borderRadius: "0px",
+          transition: "all 0.3s ease",
         }}
       >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between", height: 56, px: { xs: 2, sm: 3 } }}>
@@ -106,7 +112,9 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
                 fontWeight={900}
                 sx={{
                   letterSpacing: "-0.01em",
-                  background: "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)",
+                  background: isDark
+                    ? "linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)"
+                    : "linear-gradient(135deg, #0F172A 0%, #334155 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}
@@ -134,10 +142,14 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
                     py: 0.6,
                     borderRadius: "30px",
                     color: isActive ? "primary.main" : "text.secondary",
-                    bgcolor: isActive ? "rgba(79, 70, 229, 0.08)" : "transparent",
+                    bgcolor: isActive
+                      ? isDark
+                        ? "rgba(79, 70, 229, 0.15)"
+                        : "rgba(79, 70, 229, 0.08)"
+                      : "transparent",
                     transition: "all 0.15s ease",
                     "&:hover": {
-                      bgcolor: "rgba(79, 70, 229, 0.05)",
+                      bgcolor: isDark ? "rgba(79, 70, 229, 0.1)" : "rgba(79, 70, 229, 0.05)",
                       color: "text.primary",
                     },
                   }}
@@ -149,10 +161,38 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
           </Stack>
 
           {/* Right: Actions */}
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            {/* Theme Toggle IconButton */}
+            <Tooltip title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+              <IconButton
+                size="small"
+                onClick={toggleTheme}
+                sx={{
+                  color: isDark ? "#FACC15" : "#6366F1",
+                  bgcolor: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(99, 102, 241, 0.08)",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(99, 102, 241, 0.2)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(99, 102, 241, 0.15)",
+                    transform: "scale(1.05)",
+                  },
+                }}
+              >
+                {isDark ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
+
             {/* Notifications Icon Badge */}
             <Tooltip title="Notifications">
-              <IconButton size="small" onClick={() => navigate("/notifications")} sx={{ color: "text.secondary", bgcolor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)" }}>
+              <IconButton
+                size="small"
+                onClick={() => navigate("/notifications")}
+                sx={{
+                  color: "text.secondary",
+                  bgcolor: isDark ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.02)",
+                  border: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                }}
+              >
                 <Badge badgeContent={unseenNotificationsCount} color="error" max={99} sx={{ "& .MuiBadge-badge": { fontSize: "0.58rem", height: 15, minWidth: 15 } }}>
                   <NotificationsIcon sx={{ fontSize: 18 }} />
                 </Badge>
@@ -169,9 +209,9 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
                   height: 28,
                   cursor: "pointer",
                   bgcolor: "primary.light",
-                  border: "1.5px solid rgba(255,255,255,0.1)",
+                  border: isDark ? "1.5px solid rgba(255,255,255,0.15)" : "1.5px solid rgba(79, 70, 229, 0.3)",
                   fontSize: 12,
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                   "&:hover": { borderColor: "primary.main" },
                 }}
               >
@@ -240,7 +280,8 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
             width: 280,
             flexShrink: 0,
             p: 2,
-            borderRight: "1px solid rgba(255, 255, 255, 0.06)",
+            borderRight: "1px solid",
+            borderColor: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.08)",
             bgcolor: "background.paper",
             overflowY: "auto",
             display: { xs: "none", sm: "block" },
@@ -271,9 +312,10 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
         PaperProps={{
           sx: {
             width: 280,
-            bgcolor: "#0F172A",
-            borderRight: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow: "10px 0px 30px rgba(0,0,0,0.5)",
+            bgcolor: "background.paper",
+            borderRight: "1px solid",
+            borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
+            boxShadow: isDark ? "10px 0px 30px rgba(0,0,0,0.5)" : "10px 0px 30px rgba(0,0,0,0.1)",
             overflowY: "auto",
           },
         }}
@@ -305,7 +347,29 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
             </IconButton>
           </Stack>
           
-          <Divider sx={{ mb: 2.5, borderColor: "rgba(255,255,255,0.06)" }} />
+          <Divider sx={{ mb: 2.5, borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)" }} />
+
+          {/* Theme Toggle Button in Mobile Drawer */}
+          <Button
+            fullWidth
+            onClick={toggleTheme}
+            startIcon={isDark ? <LightModeIcon sx={{ color: "#FACC15" }} /> : <DarkModeIcon sx={{ color: "#6366F1" }} />}
+            sx={{
+              justifyContent: "flex-start",
+              textTransform: "none",
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              px: 2,
+              py: 1,
+              mb: 2,
+              borderRadius: "12px",
+              color: "text.primary",
+              bgcolor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(99, 102, 241, 0.08)",
+              border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(99, 102, 241, 0.2)",
+            }}
+          >
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </Button>
 
           {/* Quick Navigation Items */}
           <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ px: 1, mb: 1, display: "block", textTransform: "uppercase", fontSize: "0.65rem", letterSpacing: "0.05em" }}>
@@ -373,7 +437,7 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
             </Button>
           </Stack>
 
-          <Divider sx={{ mb: 2.5, borderColor: "rgba(255,255,255,0.06)" }} />
+          <Divider sx={{ mb: 2.5, borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)" }} />
 
           {/* Render Sidebar content inline for mobile */}
           <Box onClick={() => setMobileOpen(false)}>
@@ -385,3 +449,4 @@ export default function AuthenticatedLayout({ sidebarContent, children }) {
     </Box>
   );
 }
+

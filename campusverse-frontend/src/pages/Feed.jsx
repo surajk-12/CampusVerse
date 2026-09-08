@@ -12,6 +12,7 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
+import { useThemeContext } from "../context/CustomThemeContext.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
 import api from "../api/axios.js";
 import useRole from "../hooks/useRole.js";
@@ -19,6 +20,7 @@ import useRole from "../hooks/useRole.js";
 export default function Feed() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isDark, colors } = useThemeContext();
   const { isSuperAdmin, isCollegeAdmin, isModerator, canModerate, sameCollege } = useRole();
   const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api").replace("/api", "");
 
@@ -98,35 +100,20 @@ export default function Feed() {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    setSelectedFiles(prev => [...prev, ...files]);
 
-    if (selectedFiles.length + files.length > 5) {
-      showToast("You can upload a maximum of 5 attachments per post.", "warning");
-      return;
-    }
-
-    setSelectedFiles((prev) => [...prev, ...files]);
-
-    const newPreviews = files.map((file) => {
-      let type = "image";
-      if (file.type.startsWith("video/")) type = "video";
-
-      return {
-        name: file.name,
-        type,
-        url: file.type.startsWith("image/") ? URL.createObjectURL(file) : "",
-      };
-    });
-
-    setFilePreviews((prev) => [...prev, ...newPreviews]);
+    const newPreviews = files.map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith("video/") ? "video" : "image"
+    }));
+    setFilePreviews(prev => [...prev, ...newPreviews]);
   };
 
   const removeAttachment = (index) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setFilePreviews((prev) => {
-      const target = prev[index];
-      if (target.type === "image" && target.url) {
-        URL.revokeObjectURL(target.url);
-      }
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setFilePreviews(prev => {
+      URL.revokeObjectURL(prev[index].url);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -134,31 +121,32 @@ export default function Feed() {
   // Create post
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!content.trim() || submitting) return;
 
     setSubmitting(true);
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    formData.append("isAnonymous", isAnonymous);
-
-    selectedFiles.forEach((file) => {
-      formData.append("files", file);
-    });
-
     try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("collegeId", user.college);
+      formData.append("isAnonymous", isAnonymous);
+
+      selectedFiles.forEach(file => {
+        formData.append("attachments", file);
+      });
+
       const { data } = await api.post("/feed/posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setPosts((prev) => [data, ...prev]);
+      setPosts([data, ...posts]);
       setTitle("");
       setContent("");
       setIsAnonymous(false);
       setSelectedFiles([]);
       setFilePreviews([]);
       setIsExpanded(false);
+      showToast("Post created successfully!", "success");
     } catch (err) {
       console.error("Failed to create post:", err);
       showToast(err.response?.data?.message || "Failed to create post.", "error");
@@ -175,7 +163,7 @@ export default function Feed() {
       async () => {
         try {
           await api.delete(`/feed/posts/${postId}`);
-          setPosts((prev) => prev.filter((p) => p._id !== postId));
+          setPosts(posts.filter((p) => p._id !== postId));
           showToast("Post deleted successfully.", "success");
         } catch (err) {
           console.error("Failed to delete post:", err);
@@ -187,13 +175,19 @@ export default function Feed() {
 
   // Report post
   const handleReportPost = async (postId) => {
-    try {
-      await api.post(`/feed/${postId}/report`);
-      showToast("Post reported for moderation review.", "success");
-    } catch (err) {
-      console.error("Failed to report post:", err);
-      showToast(err.response?.data?.message || "You have already reported this post.", "info");
-    }
+    requestConfirmation(
+      "Report Post?",
+      "Are you sure you want to report this post to the moderators?",
+      async () => {
+        try {
+          await api.put(`/feed/posts/${postId}/report`);
+          showToast("Post reported successfully. Our team will review it.", "success");
+        } catch (err) {
+          console.error("Failed to report post:", err);
+          showToast(err.response?.data?.message || "Failed to report post.", "error");
+        }
+      }
+    );
   };
 
   // Vote post
@@ -295,8 +289,9 @@ export default function Feed() {
             sx={{
               p: 3,
               mb: 4,
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(30, 41, 59, 0.35)",
+              border: "1px solid",
+              borderColor: colors.borderColor,
+              bgcolor: colors.feedCardBg,
               backdropFilter: "blur(12px)",
               borderRadius: "24px",
               display: "flex",
@@ -308,7 +303,7 @@ export default function Feed() {
               <Campaign sx={{ fontSize: 32 }} />
             </Avatar>
             <Box>
-              <Typography variant="h5" fontWeight="900" sx={{ background: "linear-gradient(135deg, #FFF 0%, rgba(255,255,255,0.7) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <Typography variant="h5" fontWeight="900" sx={{ color: colors.subVerseTitle }}>
                 Campus Sub-Verse
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -317,20 +312,19 @@ export default function Feed() {
             </Box>
           </Paper>
 
-
-
           {/* Create Post Area */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
               mb: 4,
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(30, 41, 59, 0.25)",
+              border: "1px solid",
+              borderColor: colors.borderColor,
+              bgcolor: colors.feedCardBg,
               backdropFilter: "blur(12px)",
               borderRadius: "24px",
               transition: "all 0.3s ease",
-              "&:hover": { borderColor: "rgba(255,255,255,0.15)" },
+              "&:hover": { borderColor: colors.primary },
             }}
           >
             <Typography variant="subtitle1" fontWeight={800} color="text.primary" sx={{ mb: 2 }}>
@@ -350,8 +344,9 @@ export default function Feed() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "14px",
-                      bgcolor: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      bgcolor: colors.bgInput,
+                      border: `1px solid ${colors.borderColor}`,
+                      color: colors.inputText,
                       "& fieldset": { border: "none" },
                     },
                   }}
@@ -371,8 +366,9 @@ export default function Feed() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "14px",
-                    bgcolor: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    bgcolor: colors.bgInput,
+                    border: `1px solid ${colors.borderColor}`,
+                    color: colors.inputText,
                     "& fieldset": { border: "none" },
                   },
                 }}
@@ -394,9 +390,9 @@ export default function Feed() {
                       sx={{
                         p: 2,
                         mb: 2,
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        border: `1px solid ${colors.borderColor}`,
                         borderRadius: "14px",
-                        bgcolor: "rgba(15, 23, 42, 0.4)",
+                        bgcolor: colors.commentBg,
                         display: "flex",
                         gap: 2,
                         overflowX: "auto",
@@ -411,7 +407,7 @@ export default function Feed() {
                             height: 80,
                             borderRadius: "10px",
                             overflow: "hidden",
-                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            border: `1px solid ${colors.borderColor}`,
                             flexShrink: 0,
                           }}
                         >
@@ -426,7 +422,7 @@ export default function Feed() {
                               sx={{
                                 width: "100%",
                                 height: "100%",
-                                bgcolor: "rgba(255, 255, 255, 0.03)",
+                                bgcolor: colors.pillBg,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -483,10 +479,10 @@ export default function Feed() {
                       onClick={() => fileInputRef.current?.click()}
                       sx={{
                         p: 0.6,
-                        bgcolor: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        bgcolor: colors.pillBg,
+                        border: `1px solid ${colors.borderColor}`,
                         borderRadius: "30px",
-                        "&:hover": { bgcolor: "rgba(255,255,255,0.07)" },
+                        "&:hover": { bgcolor: colors.pillHoverBg },
                       }}
                     >
                       <AttachFile sx={{ fontSize: 16 }} />
@@ -575,16 +571,17 @@ export default function Feed() {
                     elevation={0}
                     sx={{
                       p: 3,
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      border: "1px solid",
+                      borderColor: colors.borderColor,
                       borderRadius: "24px",
-                      background: "rgba(30, 41, 59, 0.2)",
+                      bgcolor: colors.feedCardBg,
                       backdropFilter: "blur(8px)",
                       overflow: "hidden",
                       transition: "all 0.2s ease-in-out",
                       "&:hover": {
-                        borderColor: "rgba(255,255,255,0.15)",
+                        borderColor: colors.primary,
                         transform: "translateY(-2px)",
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
+                        boxShadow: colors.cardShadow,
                       },
                     }}
                   >
@@ -596,7 +593,7 @@ export default function Feed() {
                           sx={{
                             width: 38,
                             height: 38,
-                            bgcolor: post.isAnonymous ? "rgba(255,255,255,0.05)" : "primary.light",
+                            bgcolor: post.isAnonymous ? colors.pillBg : "primary.light",
                           }}
                         >
                           {post.isAnonymous ? "?" : post.author?.firstName?.[0]}
@@ -699,7 +696,7 @@ export default function Feed() {
                                   maxHeight: 280,
                                   objectFit: "cover",
                                   borderRadius: "14px",
-                                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                                  border: `1px solid ${colors.borderColor}`,
                                   cursor: "pointer",
                                   transition: "transform 0.2s",
                                   "&:hover": { transform: "scale(1.02)" },
@@ -713,7 +710,7 @@ export default function Feed() {
                                   width: "100%",
                                   maxHeight: 280,
                                   borderRadius: "14px",
-                                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                                  border: `1px solid ${colors.borderColor}`,
                                   overflow: "hidden",
                                   bgcolor: "#000",
                                 }}
@@ -731,7 +728,7 @@ export default function Feed() {
                       </Grid>
                     )}
 
-                    <Divider sx={{ mb: 2.2, borderColor: "rgba(255, 255, 255, 0.06)" }} />
+                    <Divider sx={{ mb: 2.2, borderColor: colors.borderColor }} />
 
                     {/* Post Footer Action Bar */}
                     <Stack direction="row" spacing={1.2} alignItems="center">
@@ -740,8 +737,8 @@ export default function Feed() {
                         sx={{
                           display: "flex",
                           alignItems: "center",
-                          bgcolor: "rgba(255, 255, 255, 0.03)",
-                          border: "1px solid rgba(255, 255, 255, 0.06)",
+                          bgcolor: colors.pillBg,
+                          border: `1px solid ${colors.borderColor}`,
                           borderRadius: "30px",
                           overflow: "hidden",
                           height: 28,
@@ -808,11 +805,11 @@ export default function Feed() {
                           height: 28,
                           px: 1.8,
                           border: "1px solid",
-                          borderColor: expandedComments[post._id] ? "primary.main" : "rgba(255,255,255,0.06)",
-                          bgcolor: expandedComments[post._id] ? "rgba(79, 70, 229, 0.08)" : "rgba(255, 255, 255, 0.03)",
+                          borderColor: expandedComments[post._id] ? colors.primary : colors.borderColor,
+                          bgcolor: expandedComments[post._id] ? (isDark ? "rgba(79, 70, 229, 0.15)" : "rgba(79, 70, 229, 0.1)") : colors.pillBg,
                           "&:hover": { 
-                            bgcolor: "rgba(255, 255, 255, 0.06)",
-                            borderColor: expandedComments[post._id] ? "primary.main" : "rgba(255,255,255,0.12)",
+                            bgcolor: colors.pillHoverBg,
+                            borderColor: expandedComments[post._id] ? colors.primary : colors.borderHover,
                           },
                         }}
                       >
@@ -826,7 +823,7 @@ export default function Feed() {
                         sx={{
                           mt: 3,
                           pt: 3,
-                          borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                          borderTop: `1px solid ${colors.borderColor}`,
                         }}
                       >
                         <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 2 }}>
@@ -850,8 +847,9 @@ export default function Feed() {
                               mb: 2,
                               "& .MuiOutlinedInput-root": {
                                 borderRadius: "14px",
-                                bgcolor: "rgba(255, 255, 255, 0.015)",
-                                border: "1px solid rgba(255, 255, 255, 0.06)",
+                                bgcolor: colors.bgInput,
+                                border: `1px solid ${colors.borderColor}`,
+                                color: colors.inputText,
                                 "& fieldset": { border: "none" },
                               },
                             }}
@@ -916,14 +914,14 @@ export default function Feed() {
                                   sx={{
                                     p: 2.2,
                                     borderRadius: "16px",
-                                    bgcolor: "rgba(15, 23, 42, 0.2)",
-                                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                                    bgcolor: colors.commentBg,
+                                    border: `1px solid ${colors.borderColor}`,
                                     borderLeft: comment.isAnonymous ? "3px solid #EC4899" : "3px solid #4F46E5",
                                     position: "relative",
                                     transition: "all 0.2s ease-in-out",
                                     "&:hover": {
-                                      bgcolor: "rgba(15, 23, 42, 0.35)",
-                                      borderColor: "rgba(255, 255, 255, 0.1)",
+                                      bgcolor: colors.pillHoverBg,
+                                      borderColor: colors.borderHover,
                                     },
                                   }}
                                 >
@@ -934,7 +932,7 @@ export default function Feed() {
                                       sx={{
                                         width: 28,
                                         height: 28,
-                                        bgcolor: comment.isAnonymous ? "rgba(255,255,255,0.05)" : "primary.light",
+                                        bgcolor: comment.isAnonymous ? colors.pillBg : "primary.light",
                                         fontSize: 12,
                                       }}
                                     >
@@ -951,7 +949,7 @@ export default function Feed() {
                                             sx={{
                                               height: 16,
                                               fontSize: "0.6rem",
-                                              bgcolor: "rgba(255, 255, 255, 0.05)",
+                                              bgcolor: colors.pillBg,
                                               color: "text.secondary",
                                               fontWeight: 700,
                                             }}
@@ -1008,8 +1006,9 @@ export default function Feed() {
             sx={{
               p: 3,
               mb: 3,
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(30, 41, 59, 0.25)",
+              border: "1px solid",
+              borderColor: colors.borderColor,
+              bgcolor: colors.feedCardBg,
               backdropFilter: "blur(12px)",
               borderRadius: "24px",
             }}
@@ -1030,10 +1029,10 @@ export default function Feed() {
                 </Box>
               </Stack>
               
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.06)" }} />
+              <Divider sx={{ borderColor: colors.borderColor }} />
               
               <Box>
-                <Typography variant="caption" color="primary.light" fontWeight={800} display="block" sx={{ mb: 1, textTransform: "uppercase", letterSpacing: 1 }}>
+                <Typography variant="caption" color="primary.main" fontWeight={800} display="block" sx={{ mb: 1, textTransform: "uppercase", letterSpacing: 1 }}>
                   Campus Space Description
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: "0.85rem" }}>
@@ -1041,16 +1040,16 @@ export default function Feed() {
                 </Typography>
               </Box>
 
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ bgcolor: "rgba(255,255,255,0.015)", p: 2, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.04)" }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ bgcolor: colors.commentBg, p: 2, borderRadius: "16px", border: "1px solid", borderColor: colors.borderColor }}>
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={900} color="primary.light">
+                  <Typography variant="subtitle2" fontWeight={900} color="primary.main">
                     120+ Active Space
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
                     Verified classmate profiles
                   </Typography>
                 </Box>
-                <AvatarGroup max={3} sx={{ "& .MuiAvatar-root": { width: 26, height: 26, fontSize: 10, border: "2px solid #0F172A" } }}>
+                <AvatarGroup max={3} sx={{ "& .MuiAvatar-root": { width: 26, height: 26, fontSize: 10, border: "2px solid", borderColor: "background.paper" } }}>
                   <Avatar sx={{ bgcolor: "#F59E0B" }}>M</Avatar>
                   <Avatar sx={{ bgcolor: "#10B981" }}>H</Avatar>
                   <Avatar sx={{ bgcolor: "#EF4444" }}>D</Avatar>
@@ -1064,8 +1063,9 @@ export default function Feed() {
             elevation={0}
             sx={{
               p: 3,
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(30, 41, 59, 0.25)",
+              border: "1px solid",
+              borderColor: colors.borderColor,
+              bgcolor: colors.feedCardBg,
               backdropFilter: "blur(12px)",
               borderRadius: "24px",
             }}
